@@ -76,7 +76,7 @@ document.querySelector('#checkoutBtn').click();
 check('checkout modal opens', document.querySelector('#checkoutModal').hidden === false);
 check('summary shows total due', txt('#checkoutSummary').includes('\u20b12,649.00'));
 check('GCash is the default method', document.querySelector('#fieldsGcash').hidden === false);
-check('configured GCash number shown', txt('#gcashNumber') === '0917 000 0000');
+check('configured GCash number shown', txt('#gcashNumber') === '+639305314317');
 check('pay button states the sent amount', txt('#payBtn').includes('\u20b12,649.00'));
 document.querySelector('#payBtn').click();
 check('blocks empty delivery details', document.querySelector('#checkoutError').hidden === false);
