@@ -77,44 +77,98 @@ Important reality check from the research, so you set this up correctly:
   Workers, Vercel, Netlify, Deno Deploy) and put its URL in
   `CONFIG.autoGcash.createUrl`. Everything else stays on GitHub Pages.
 
-Example Cloudflare Worker (PayMongo GCash source):
+Example Cloudflare Worker. **Both routes are required.** Creating the
+source alone does NOT collect money: PayMongo only holds the authorized
+funds, and per its docs, *if you fail to create a Payment within one hour
+the funds are automatically refunded to the customer.* The Payment must be
+created from a `source.chargeable` webhook.
+
+    // Route 1: POST /create-gcash  → called by the storefront
+    // Route 2: POST /webhook       → called by PayMongo (register this URL
+    //          via PayMongo's Create-a-Webhook API for `source.chargeable`)
+    const auth = (k) => 'Basic ' + btoa(k + ':');
 
     export default {
-      async fetch(req) {
+      async fetch(req, env) {
+        const url = new URL(req.url);
         const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type' };
         if (req.method === 'OPTIONS') return new Response('', { headers: cors });
-        const { amount, return_url } = await req.json();
-        const r = await fetch('https://api.paymongo.com/v1/sources', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json',
-            Authorization: 'Basic ' + btoa(PAYMONGO_SECRET_KEY + ':') },
-          body: JSON.stringify({ data: { attributes: {
-            amount, currency: 'PHP', type: 'gcash',
-            redirect: { success: return_url + '?payment=success', failed: return_url + '?payment=failed' },
-          }}}),
-        });
-        const d = await r.json();
-        return new Response(JSON.stringify({ checkout_url: d.data.attributes.redirect.checkout_url }),
-          { headers: { ...cors, 'Content-Type': 'application/json' } });
+
+        // 1) Create the GCash source and hand back the checkout URL
+        if (url.pathname === '/create-gcash') {
+          const { amount, return_url } = await req.json();
+          const r = await fetch('https://api.paymongo.com/v1/sources', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: auth(env.PAYMONGO_SECRET_KEY) },
+            body: JSON.stringify({ data: { attributes: {
+              amount, currency: 'PHP', type: 'gcash',
+              redirect: { success: return_url + '?payment=success', failed: return_url + '?payment=failed' },
+            }}}),
+          });
+          const d = await r.json();
+          if (!d.data) return new Response(JSON.stringify({ error: 'source failed' }), { status: 502, headers: { ...cors, 'Content-Type': 'application/json' } });
+          return new Response(JSON.stringify({ checkout_url: d.data.attributes.redirect.checkout_url }),
+            { headers: { ...cors, 'Content-Type': 'application/json' } });
+        }
+
+        // 2) THE STEP THAT ACTUALLY TAKES THE MONEY.
+        //    PayMongo POSTs here when the buyer authorises in GCash.
+        if (url.pathname === '/webhook') {
+          const evt = await req.json();
+          const a = evt?.data?.attributes;
+          if (a?.type === 'source.chargeable') {
+            const src = a.data;
+            await fetch('https://api.paymongo.com/v1/payments', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: auth(env.PAYMONGO_SECRET_KEY) },
+              body: JSON.stringify({ data: { attributes: {
+                amount: src.attributes.amount,
+                currency: 'PHP',
+                description: 'SAAK order',
+                source: { id: src.id, type: 'source' },
+              }}}),
+            });
+          }
+          return new Response('ok');
+        }
+        return new Response('not found', { status: 404 });
       },
     };
 
+Set `PAYMONGO_SECRET_KEY` as a Worker secret (never in front-end code),
+then register the webhook once with PayMongo:
+
+    curl https://api.paymongo.com/v1/webhooks \
+      -u sk_test_YOURKEY: -H 'Content-Type: application/json' \
+      -d '{"data":{"attributes":{"url":"https://your-worker.workers.dev/webhook","events":["source.chargeable"]}}}'
+
 Then set in CONFIG:
 
-    autoGcash: { enabled: true, createUrl: 'https://your-worker.workers.dev', returnUrl: '' },
+    autoGcash: { enabled: true, createUrl: 'https://your-worker.workers.dev/create-gcash', returnUrl: '' },
 
-**Does it work for real transactions?** Yes, once (1) you have an activated
-gateway merchant account (PayMongo needs an M2/fully-verified account for
-live keys), (2) the worker uses your **live** secret key, and (3) you
-register your settlement account. Until then it runs against the gateway's
-test mode. Confirmation is real and automatic — PayMongo fires a
-`payment.paid` webhook and the buyer is redirected back with
-`?payment=success`, which the site reads to complete the order.
-**One caveat the research is explicit about:** the *final* success signal
-should be confirmed server-side via that webhook; the redirect alone is a
-good UX signal but a determined user could forge the return URL, so for
-higher-value goods, verify the payment status in your gateway dashboard
-before shipping.
+**Does it work for real transactions?** Not until you complete the setup
+above — and this has NOT been verified against live PayMongo by the person
+who wrote this code. What is tested is the storefront half (the call to
+`createUrl`, the redirect, and the return handling), against a stubbed
+gateway. What is untested is everything on PayMongo's side.
+
+To reach genuinely working live payments you need all of:
+
+1. A PayMongo merchant account, approved and activated for live keys.
+2. The Worker above deployed with your **live** secret key, **both routes**.
+3. The `source.chargeable` webhook registered (step above). Skip this and
+   buyers will authorise successfully, see a success page, and be
+   auto-refunded an hour later while you receive nothing.
+4. A settlement account registered with PayMongo — this is where the money
+   lands. It is a bank/GCash account tied to the merchant profile; it is
+   NOT set by putting a phone number in this site's config.
+5. An end-to-end test payment in PayMongo's test mode, then one small real
+   payment in live mode, confirmed in the PayMongo dashboard.
+
+**Redirect is not proof of payment.** `?payment=success` is a UX signal a
+user could forge by typing the URL. The authoritative record is the
+`payment.paid` event / PayMongo dashboard. Confirm there before shipping
+goods.
 
 When `autoGcash.enabled` is false, checkout uses the manual flow below.
 

@@ -20,7 +20,7 @@
          search bar) render on load. -->
     <style>[hidden]{display:none !important}</style>
     <!-- Custom CSS (bump ?v= when styles change, to invalidate caches) -->
-    <link rel="stylesheet" href="styles/style.css?v=3">
+    <link rel="stylesheet" href="styles/style.css?v=5">
 </head>
 <body>
 
@@ -34,14 +34,14 @@
             <li><a href="#contact">Contact</a></li>
         </ul>
         <div class="nav-actions">
-            <button class="icon-btn" id="searchToggle" aria-label="Search products">
+            <button class="icon-btn" id="searchToggle" data-fallback="Find" aria-label="Search products">
                 <i class="fas fa-magnifying-glass"></i>
             </button>
-            <button class="icon-btn cart-btn" id="cartToggle" aria-label="Open shopping bag">
+            <button class="icon-btn cart-btn" id="cartToggle" data-fallback="Bag" aria-label="Open shopping bag">
                 <i class="fas fa-bag-shopping"></i>
                 <span class="cart-count" id="cartCount" hidden>0</span>
             </button>
-            <button class="icon-btn menu-icon" id="menuIcon" aria-label="Toggle menu" aria-expanded="false">
+            <button class="icon-btn menu-icon" id="menuIcon" data-fallback="Menu" aria-label="Toggle menu" aria-expanded="false">
                 <i class="fas fa-bars"></i>
             </button>
         </div>
@@ -51,7 +51,7 @@
     <div class="search-bar" id="searchBar" hidden>
         <i class="fas fa-magnifying-glass"></i>
         <input type="search" id="searchInput" placeholder="Search the collection…" aria-label="Search products">
-        <button class="icon-btn" id="searchClose" aria-label="Close search"><i class="fas fa-xmark"></i></button>
+        <button class="icon-btn" id="searchClose" data-fallback="Close" aria-label="Close search"><i class="fas fa-xmark"></i></button>
     </div>
 
     <!-- Hero Section -->
@@ -188,7 +188,7 @@
     <aside class="cart-drawer" id="cartDrawer" aria-label="Shopping bag" aria-hidden="true">
         <div class="cart-head">
             <h3>Your bag <span class="cart-head-count" id="cartHeadCount"></span></h3>
-            <button class="icon-btn" id="cartClose" aria-label="Close bag"><i class="fas fa-xmark"></i></button>
+            <button class="icon-btn" id="cartClose" data-fallback="Close" aria-label="Close bag"><i class="fas fa-xmark"></i></button>
         </div>
         <div class="cart-items" id="cartItems"><!-- rendered by main.js --></div>
         <div class="cart-foot" id="cartFoot">
@@ -205,7 +205,7 @@
         <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="checkoutTitle">
             <div class="modal-head">
                 <h3 id="checkoutTitle">Checkout</h3>
-                <button class="icon-btn" id="modalClose" aria-label="Close checkout"><i class="fas fa-xmark"></i></button>
+                <button class="icon-btn" id="modalClose" data-fallback="Close" aria-label="Close checkout"><i class="fas fa-xmark"></i></button>
             </div>
 
             <!-- Step 1: details + payment -->

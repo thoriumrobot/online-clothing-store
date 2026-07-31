@@ -159,7 +159,20 @@ const b64 = (s) => Buffer.from(s, 'utf8').toString('base64');
   d.querySelector('.admin-edit-form').querySelector('.edit-cancel').click();
   check('cancel closes the edit form', d.querySelector('.admin-edit-form') === null);
 
-  console.log('\n[C] Orders list from the order-log endpoint');
+  console.log('\n[B3] Admin is usable on a phone');
+{
+  const adminSrc = fs.readFileSync(path.join(root, 'admin.html'), 'utf8');
+  check('admin inputs are 16px (no iOS focus zoom)',
+    !/font: 400 1[0-5]px 'Inter'/.test(adminSrc));
+  check('edit/remove buttons meet the 44px tap target',
+    (adminSrc.match(/min-height: 44px/g) || []).length >= 2);
+  check('logout icon button has a text fallback',
+    /id="logoutBtn"[^>]*data-fallback="Exit"/.test(adminSrc));
+  check('admin detects a blocked icon font', adminJs.includes("classList.toggle('no-icons'"));
+  check('admin uses the bumped stylesheet version', /style\.css\?v=5/.test(adminSrc));
+}
+
+console.log('\n[C] Orders list from the order-log endpoint');
   const sampleOrders = [
     { orderId: 'SAAK-A1', date: '2026-07-30T10:00:00Z', method: 'GCash (manual transfer)', reference: '1112223334445',
       total: 2649, items: [{ name: 'Studio Knit', qty: 1, size: 'M', price: 2499 }],

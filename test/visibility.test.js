@@ -60,6 +60,53 @@ console.log('\n[B] Only GCash and bank transfer are accepted');
   check('verification promise in footnote', d.querySelector('#checkoutFootnote').textContent.includes('verify'));
 }
 
+console.log('\n[B2] Cart is reliably openable on mobile');
+{
+  const dom = bootStandalone();
+  const { window } = dom;
+  const d = window.document;
+  const css = fs.readFileSync(path.join(root, 'styles', 'style.css'), 'utf8');
+
+  // Tap target: icon buttons must meet the 44px minimum
+  check('icon buttons have a >=44px min tap target',
+    /\.icon-btn \{[^}]*min-width: 44px[^}]*min-height: 44px/s.test(css));
+  check('icon buttons centre their glyph (inline-flex)',
+    /\.icon-btn \{[^}]*display: inline-flex/s.test(css));
+  check('touch-action set to avoid double-tap delay', /touch-action: manipulation/.test(css));
+
+  // Icon-font failure must not make the cart button disappear
+  const cartBtn = d.querySelector('#cartToggle');
+  check('cart button has a text fallback label', cartBtn.getAttribute('data-fallback') === 'Bag');
+  check('every icon-only button has a fallback',
+    [...d.querySelectorAll('.icon-btn')].every((b) => b.getAttribute('data-fallback')));
+  check('fallback text shows when body.no-icons is set',
+    /body\.no-icons \.icon-btn::after \{ display: inline/.test(css));
+  check('cart button keeps its accessible name', cartBtn.getAttribute('aria-label').length > 0);
+
+  // Off-canvas drawer must not create a horizontal pan
+  check('horizontal overflow guarded on body', /overflow-x: hidden/.test(css));
+
+  // iOS Safari zooms the page when a focused input is under 16px —
+  // mid-checkout that throws the layout out of alignment.
+  // Only text-entry fields matter here (iOS opens a picker for <select>).
+  const inputRules = [...css.matchAll(/(input|textarea)[^{}]*\{([^}]*)\}/g)]
+    .map((m) => m[2])
+    .filter((body) => /font:/.test(body));
+  const tooSmall = inputRules
+    .map((b) => Number((/font: \d+ (\d+)px/.exec(b) || [])[1]))
+    .filter((n) => n && n < 16);
+  check('no text input is under 16px (iOS focus zoom)', tooSmall.length === 0, tooSmall.join('/') || 'all >=16');
+  check('checkout + search + newsletter fields at 16px',
+    (css.match(/font: 400 16px 'Inter'/g) || []).length >= 3);
+
+  // The button actually opens the drawer, and the overlay closes it
+  cartBtn.click();
+  check('tapping the bag opens the drawer', d.querySelector('#cartDrawer').classList.contains('open'));
+  check('drawer is announced to screen readers', d.querySelector('#cartDrawer').getAttribute('aria-hidden') === 'false');
+  d.querySelector('#overlay').click();
+  check('tapping the overlay closes the drawer', !d.querySelector('#cartDrawer').classList.contains('open'));
+}
+
 console.log('\n[C] Automatic GCash gateway (redirect flow)');
 {
   const dom = bootStandalone();
@@ -113,6 +160,8 @@ console.log('\n[C] Automatic GCash gateway (redirect flow)');
     check('order email keeps the customer name after redirect', emailHref.includes('Ana Cruz'));
     const clearedVal = w2.localStorage.getItem('saak_pending_order');
     check('pending order cleared after completion', clearedVal === null || clearedVal === 'null');
+    check('cart drawer stays shut behind the confirmation',
+      !d2.querySelector('#cartDrawer').classList.contains('open'));
 
     console.log(`\nRESULT: ${passed} passed, ${failed} failed`);
     process.exit(failed ? 1 : 0);

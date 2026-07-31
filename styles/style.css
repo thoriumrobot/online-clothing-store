@@ -27,6 +27,9 @@
 html { scroll-behavior: smooth; }
 
 body {
+  /* The cart drawer sits off-canvas to the right; guard against any
+     horizontal pan on mobile browsers that would shift the header. */
+  overflow-x: hidden;
   font-family: 'Inter', sans-serif;
   color: var(--ink);
   background: var(--paper);
@@ -76,7 +79,29 @@ h1, h2, h3, .logo, .footer-logo {
   cursor: pointer;
   padding: 8px;
   line-height: 1;
+  /* Guaranteed tap target (WCAG 2.5.5 / Apple HIG 44pt). The explicit
+     min size also keeps the button tappable if the icon font fails to
+     load — otherwise the empty <i> collapses it to ~16px. */
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: rgba(36, 56, 232, 0.15);
+  touch-action: manipulation;
 }
+
+/* Text fallback shown only when the icon font didn't load */
+.icon-btn::after {
+  content: attr(data-fallback);
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  display: none;
+}
+body.no-icons .icon-btn::after { display: inline; }
+body.no-icons .icon-btn > i { display: none; }
 .icon-btn:hover { color: var(--cobalt); }
 
 .link-btn {
@@ -152,7 +177,7 @@ h1, h2, h3, .logo, .footer-logo {
 .search-bar input {
   flex: 1;
   border: none;
-  font: 400 15px 'Inter', sans-serif;
+  font: 400 16px 'Inter', sans-serif;   /* 16px avoids iOS focus zoom */
   background: transparent;
 }
 .search-bar input:focus { outline: none; }
@@ -332,7 +357,7 @@ h1, h2, h3, .logo, .footer-logo {
   border-radius: var(--radius);
   background: #1F1F18;
   color: var(--paper);
-  font: 400 14px 'Inter', sans-serif;
+  font: 400 16px 'Inter', sans-serif;   /* 16px avoids iOS focus zoom */
 }
 .newsletter-form .btn-primary { background: var(--cobalt); border-color: var(--cobalt); }
 .newsletter-form .btn-primary:hover { background: var(--paper); color: var(--ink); border-color: var(--paper); }
@@ -351,7 +376,9 @@ h1, h2, h3, .logo, .footer-logo {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--white);
-  font: 400 14px 'Inter', sans-serif;
+  /* 16px minimum: iOS Safari auto-zooms the page when a focused input
+     is smaller, which throws the checkout out of alignment mid-purchase. */
+  font: 400 16px 'Inter', sans-serif;
   color: var(--ink);
 }
 .contact-form textarea { resize: vertical; }

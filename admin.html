@@ -8,7 +8,7 @@
     <style>[hidden]{display:none !important}</style>
     <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;900&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="stylesheet" href="styles/style.css?v=3">
+    <link rel="stylesheet" href="styles/style.css?v=5">
     <style>
         .admin-wrap { max-width: 560px; margin: 0 auto; padding: 28px 18px 60px; }
         .admin-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
@@ -18,7 +18,7 @@
         .admin-card input, .admin-card select {
             width: 100%; padding: 13px 14px; margin-bottom: 10px;
             border: 1px solid var(--line); border-radius: var(--radius);
-            font: 400 15px 'Inter', sans-serif; background: var(--paper);
+            font: 400 16px 'Inter', sans-serif; background: var(--paper);
         }
         .admin-status { font-size: 13px; padding: 11px 14px; border-radius: var(--radius); margin-bottom: 12px; }
         .admin-status.ok { background: #E7F3EA; color: #1F6B37; }
@@ -30,17 +30,19 @@
         .admin-item-info strong { font-size: 14px; display: block; }
         .admin-item-info span { font-size: 12px; color: var(--ash); }
         .admin-remove { background: none; border: 1px solid var(--line); border-radius: var(--radius);
-            color: #B4231A; padding: 8px 12px; font-size: 12px; cursor: pointer; }
+            color: #B4231A; padding: 8px 12px; font-size: 12px; cursor: pointer;
+            min-height: 44px; min-width: 64px; }
         .admin-remove:disabled { opacity: 0.5; }
         .admin-item-actions { display: flex; flex-direction: column; gap: 6px; }
         .admin-edit { background: none; border: 1px solid var(--line); border-radius: var(--radius);
-            color: var(--ink); padding: 8px 12px; font-size: 12px; cursor: pointer; }
+            color: var(--ink); padding: 8px 12px; font-size: 12px; cursor: pointer;
+            min-height: 44px; min-width: 64px; }
         .admin-edit:disabled { opacity: 0.5; }
         .admin-edit-form { padding: 12px; margin: 2px 0 10px; background: var(--stone); border-radius: var(--radius); }
         .admin-edit-form input, .admin-edit-form select {
             width: 100%; padding: 12px 13px; margin-bottom: 8px;
             border: 1px solid var(--line); border-radius: var(--radius);
-            font: 400 15px 'Inter', sans-serif; background: var(--paper); }
+            font: 400 16px 'Inter', sans-serif; background: var(--paper); }
         .edit-row { display: flex; gap: 8px; }
         .edit-row .btn { flex: 1; padding: 12px; }
         .admin-note { font-size: 12px; color: var(--ash); line-height: 1.6; }
@@ -58,7 +60,7 @@
 <div class="admin-wrap">
     <div class="admin-head">
         <h1>SAAK<span class="logo-dot">.</span> Catalog Manager</h1>
-        <button class="icon-btn" id="logoutBtn" hidden aria-label="Log out"><i class="fas fa-right-from-bracket"></i></button>
+        <button class="icon-btn" id="logoutBtn" hidden data-fallback="Exit" aria-label="Log out"><i class="fas fa-right-from-bracket"></i></button>
     </div>
 
     <p class="admin-status" id="status" hidden></p>

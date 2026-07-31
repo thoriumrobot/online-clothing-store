@@ -431,6 +431,23 @@ function logout() {
 }
 
 function init() {
+  // Same icon-font guard as the storefront: if the Font Awesome CDN is
+  // blocked, swap icon-only buttons to their text fallback.
+  const checkIcons = () => {
+    let loaded = false;
+    try {
+      loaded = !!(document.fonts && (
+        document.fonts.check('16px "Font Awesome 6 Free"') ||
+        document.fonts.check('900 16px "Font Awesome 6 Free"')
+      ));
+    } catch (e) { loaded = false; }
+    document.body.classList.toggle('no-icons', !loaded);
+  };
+  setTimeout(checkIcons, 1200);
+  if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
+    document.fonts.ready.then(checkIcons).catch(() => {});
+  }
+
   // image choices for the add form
   $('#newImage').innerHTML = imageOptions();
 

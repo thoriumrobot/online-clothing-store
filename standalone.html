@@ -50,6 +50,9 @@
 html { scroll-behavior: smooth; }
 
 body {
+  /* The cart drawer sits off-canvas to the right; guard against any
+     horizontal pan on mobile browsers that would shift the header. */
+  overflow-x: hidden;
   font-family: 'Inter', sans-serif;
   color: var(--ink);
   background: var(--paper);
@@ -99,7 +102,29 @@ h1, h2, h3, .logo, .footer-logo {
   cursor: pointer;
   padding: 8px;
   line-height: 1;
+  /* Guaranteed tap target (WCAG 2.5.5 / Apple HIG 44pt). The explicit
+     min size also keeps the button tappable if the icon font fails to
+     load — otherwise the empty <i> collapses it to ~16px. */
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: rgba(36, 56, 232, 0.15);
+  touch-action: manipulation;
 }
+
+/* Text fallback shown only when the icon font didn't load */
+.icon-btn::after {
+  content: attr(data-fallback);
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  display: none;
+}
+body.no-icons .icon-btn::after { display: inline; }
+body.no-icons .icon-btn > i { display: none; }
 .icon-btn:hover { color: var(--cobalt); }
 
 .link-btn {
@@ -175,7 +200,7 @@ h1, h2, h3, .logo, .footer-logo {
 .search-bar input {
   flex: 1;
   border: none;
-  font: 400 15px 'Inter', sans-serif;
+  font: 400 16px 'Inter', sans-serif;   /* 16px avoids iOS focus zoom */
   background: transparent;
 }
 .search-bar input:focus { outline: none; }
@@ -355,7 +380,7 @@ h1, h2, h3, .logo, .footer-logo {
   border-radius: var(--radius);
   background: #1F1F18;
   color: var(--paper);
-  font: 400 14px 'Inter', sans-serif;
+  font: 400 16px 'Inter', sans-serif;   /* 16px avoids iOS focus zoom */
 }
 .newsletter-form .btn-primary { background: var(--cobalt); border-color: var(--cobalt); }
 .newsletter-form .btn-primary:hover { background: var(--paper); color: var(--ink); border-color: var(--paper); }
@@ -374,7 +399,9 @@ h1, h2, h3, .logo, .footer-logo {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--white);
-  font: 400 14px 'Inter', sans-serif;
+  /* 16px minimum: iOS Safari auto-zooms the page when a focused input
+     is smaller, which throws the checkout out of alignment mid-purchase. */
+  font: 400 16px 'Inter', sans-serif;
   color: var(--ink);
 }
 .contact-form textarea { resize: vertical; }
@@ -781,14 +808,14 @@ footer { background: var(--ink); color: var(--paper); padding: 56px 5vw 28px; }
             <li><a href="#contact">Contact</a></li>
         </ul>
         <div class="nav-actions">
-            <button class="icon-btn" id="searchToggle" aria-label="Search products">
+            <button class="icon-btn" id="searchToggle" data-fallback="Find" aria-label="Search products">
                 <i class="fas fa-magnifying-glass"></i>
             </button>
-            <button class="icon-btn cart-btn" id="cartToggle" aria-label="Open shopping bag">
+            <button class="icon-btn cart-btn" id="cartToggle" data-fallback="Bag" aria-label="Open shopping bag">
                 <i class="fas fa-bag-shopping"></i>
                 <span class="cart-count" id="cartCount" hidden>0</span>
             </button>
-            <button class="icon-btn menu-icon" id="menuIcon" aria-label="Toggle menu" aria-expanded="false">
+            <button class="icon-btn menu-icon" id="menuIcon" data-fallback="Menu" aria-label="Toggle menu" aria-expanded="false">
                 <i class="fas fa-bars"></i>
             </button>
         </div>
@@ -798,7 +825,7 @@ footer { background: var(--ink); color: var(--paper); padding: 56px 5vw 28px; }
     <div class="search-bar" id="searchBar" hidden>
         <i class="fas fa-magnifying-glass"></i>
         <input type="search" id="searchInput" placeholder="Search the collection…" aria-label="Search products">
-        <button class="icon-btn" id="searchClose" aria-label="Close search"><i class="fas fa-xmark"></i></button>
+        <button class="icon-btn" id="searchClose" data-fallback="Close" aria-label="Close search"><i class="fas fa-xmark"></i></button>
     </div>
 
     <!-- Hero Section -->
@@ -935,7 +962,7 @@ footer { background: var(--ink); color: var(--paper); padding: 56px 5vw 28px; }
     <aside class="cart-drawer" id="cartDrawer" aria-label="Shopping bag" aria-hidden="true">
         <div class="cart-head">
             <h3>Your bag <span class="cart-head-count" id="cartHeadCount"></span></h3>
-            <button class="icon-btn" id="cartClose" aria-label="Close bag"><i class="fas fa-xmark"></i></button>
+            <button class="icon-btn" id="cartClose" data-fallback="Close" aria-label="Close bag"><i class="fas fa-xmark"></i></button>
         </div>
         <div class="cart-items" id="cartItems"><!-- rendered by main.js --></div>
         <div class="cart-foot" id="cartFoot">
@@ -952,7 +979,7 @@ footer { background: var(--ink); color: var(--paper); padding: 56px 5vw 28px; }
         <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="checkoutTitle">
             <div class="modal-head">
                 <h3 id="checkoutTitle">Checkout</h3>
-                <button class="icon-btn" id="modalClose" aria-label="Close checkout"><i class="fas fa-xmark"></i></button>
+                <button class="icon-btn" id="modalClose" data-fallback="Close" aria-label="Close checkout"><i class="fas fa-xmark"></i></button>
             </div>
 
             <!-- Step 1: details + payment -->
@@ -1635,16 +1662,38 @@ function handleGcashReturn() {
   if (outcome === 'success' && pending) {
     cart = pending.cart || [];
     store.set('saak_pending_order', null);
-    openCart();
+    // Show the checkout modal only — opening the cart drawer here would
+    // slide it out behind the confirmation.
     $('#checkoutModal').hidden = false;
     $('#checkoutModal').setAttribute('aria-hidden', 'false');
     $('#overlay').hidden = false;
     document.body.classList.add('no-scroll');
     finalizeOrder('GCash (auto)', pending.total,
-      '<div class="sum-row"><span>Confirmed by</span><span>GCash / PayMongo</span></div>', false, '', pending.ship);
+      '<div class="sum-row"><span>GCash</span><span>authorization received</span></div>', false, '', pending.ship);
   } else if (outcome === 'failed') {
     store.set('saak_pending_order', null);
     toast('GCash payment was not completed. Please try again.', 'fa-circle-info');
+  }
+}
+
+// If the Font Awesome CDN is blocked (data saver, ad blocker, captive
+// wifi), icon-only buttons would render empty. Detect that and fall back
+// to short text labels so the cart/menu stay usable.
+function detectIconFont() {
+  const apply = () => {
+    let loaded = false;
+    try {
+      loaded = !!(document.fonts && (
+        document.fonts.check('16px "Font Awesome 6 Free"') ||
+        document.fonts.check('900 16px "Font Awesome 6 Free"')
+      ));
+    } catch (e) { loaded = false; }
+    document.body.classList.toggle('no-icons', !loaded);
+  };
+  // Give the stylesheet/font a moment, then re-check once fonts settle.
+  setTimeout(apply, 1200);
+  if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
+    document.fonts.ready.then(apply).catch(() => {});
   }
 }
 
@@ -1653,6 +1702,7 @@ function init() {
   renderProducts();
   renderCart();
   handleGcashReturn();
+  detectIconFont();
 
   // Mobile menu
   const menuIcon = $('#menuIcon');

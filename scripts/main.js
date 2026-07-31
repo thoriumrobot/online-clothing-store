@@ -550,16 +550,38 @@ function handleGcashReturn() {
   if (outcome === 'success' && pending) {
     cart = pending.cart || [];
     store.set('saak_pending_order', null);
-    openCart();
+    // Show the checkout modal only — opening the cart drawer here would
+    // slide it out behind the confirmation.
     $('#checkoutModal').hidden = false;
     $('#checkoutModal').setAttribute('aria-hidden', 'false');
     $('#overlay').hidden = false;
     document.body.classList.add('no-scroll');
     finalizeOrder('GCash (auto)', pending.total,
-      '<div class="sum-row"><span>Confirmed by</span><span>GCash / PayMongo</span></div>', false, '', pending.ship);
+      '<div class="sum-row"><span>GCash</span><span>authorization received</span></div>', false, '', pending.ship);
   } else if (outcome === 'failed') {
     store.set('saak_pending_order', null);
     toast('GCash payment was not completed. Please try again.', 'fa-circle-info');
+  }
+}
+
+// If the Font Awesome CDN is blocked (data saver, ad blocker, captive
+// wifi), icon-only buttons would render empty. Detect that and fall back
+// to short text labels so the cart/menu stay usable.
+function detectIconFont() {
+  const apply = () => {
+    let loaded = false;
+    try {
+      loaded = !!(document.fonts && (
+        document.fonts.check('16px "Font Awesome 6 Free"') ||
+        document.fonts.check('900 16px "Font Awesome 6 Free"')
+      ));
+    } catch (e) { loaded = false; }
+    document.body.classList.toggle('no-icons', !loaded);
+  };
+  // Give the stylesheet/font a moment, then re-check once fonts settle.
+  setTimeout(apply, 1200);
+  if (document.fonts && document.fonts.ready && document.fonts.ready.then) {
+    document.fonts.ready.then(apply).catch(() => {});
   }
 }
 
@@ -568,6 +590,7 @@ function init() {
   renderProducts();
   renderCart();
   handleGcashReturn();
+  detectIconFont();
 
   // Mobile menu
   const menuIcon = $('#menuIcon');
