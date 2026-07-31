@@ -218,10 +218,14 @@ repository via the GitHub API, and Pages redeploys the store automatically
    repository**. Permissions: **Contents → Read and write**. Nothing else.
 2. Open `https://<your-pages-url>/admin.html` on the phone, paste the
    token, and connect. **Add, edit, or remove** items from the forms:
-   - *Add* — fill the "Add item" form.
+   - *Add* — fill the "Add item" form. Tap **Take or choose a photo** to
+     shoot a new picture or pick one from the gallery; it's shrunk in the
+     browser (max 1400px, JPEG) and committed to `images/`, then the new
+     item points at it. Leave it empty to reuse an existing image.
    - *Edit* — tap **Edit** on any item to open an inline form pre-filled
      with its current name, price, category, image, and badge; change what
-     you need and tap **Save changes** (the item's ID never changes).
+     you need and tap **Save changes** (the item's ID never changes). Use
+     **Replace photo** to upload a new picture for an existing item.
    - *Remove* — tap **Remove**.
    Every change is a commit, so the git log doubles as an audit trail.
 
@@ -234,6 +238,14 @@ writes to, so remember its limit: orders only appear there if the
 customer's browser successfully sent the log — the email inbox remains
 the authoritative record. The key rides on the request URL over HTTPS;
 treat it like a password and change it in the script to rotate it.
+
+Photo notes: uploads need the same **Contents: Read and write** token
+permission as catalog edits — no extra setup. Each photo is one commit,
+so images accumulate in git history and are never auto-deleted; removing a
+product does not delete its image file. If an upload fails, the item is
+not added or changed, so the catalog and images can't drift apart.
+Newly uploaded photos are *not* baked into `standalone.html` — rerun
+`npm run build` on a computer if you use that file.
 
 Security notes, honestly: `admin.html` is public but useless without a
 token — all authorization is GitHub's. The token is held in the browser

@@ -169,7 +169,88 @@ const b64 = (s) => Buffer.from(s, 'utf8').toString('base64');
   check('logout icon button has a text fallback',
     /id="logoutBtn"[^>]*data-fallback="Exit"/.test(adminSrc));
   check('admin detects a blocked icon font', adminJs.includes("classList.toggle('no-icons'"));
-  check('admin uses the bumped stylesheet version', /style\.css\?v=5/.test(adminSrc));
+  // Version-agnostic: admin must carry the SAME cache-buster as the store,
+  // so a CSS change can't leave one page on a stale stylesheet.
+  const storeVer = (/style\.css\?v=(\d+)/.exec(fs.readFileSync(path.join(root, 'index.html'), 'utf8')) || [])[1];
+  const adminVer = (/style\.css\?v=(\d+)/.exec(adminSrc) || [])[1];
+  check('admin stylesheet version matches the store', !!storeVer && storeVer === adminVer, 'v=' + adminVer);
+}
+
+console.log('\n[B4] Photo upload from the phone');
+{
+  // jsdom has no canvas, so preparePhoto takes its fallback path — which
+  // is exactly the path real older browsers hit.
+  const png = Buffer.from('89504e470d0a1a0a0000000d49484452', 'hex'); // tiny PNG header
+  const makeFile = (bytes, type, name) => {
+    const f = new dom.window.File([bytes], name, { type });
+    f.arrayBuffer = () => Promise.resolve(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
+    return f;
+  };
+
+  const uploads = [];
+  const prevFetch = dom.window.fetch;
+  dom.window.fetch = (url, opts = {}) => {
+    if (String(url).includes('/contents/images/')) {
+      uploads.push({ url: String(url), body: JSON.parse(opts.body) });
+      return Promise.resolve({ ok: true, status: 201, json: () => Promise.resolve({ content: { sha: 'img1' } }) });
+    }
+    return prevFetch(url, opts);
+  };
+
+  // Attach a photo and add an item
+  const input = d.querySelector('#newPhoto');
+  Object.defineProperty(input, 'files', { value: [makeFile(png, 'image/png', 'shirt.png')], configurable: true });
+  d.querySelector('#newName').value = 'Photo Shirt';
+  d.querySelector('#newPrice').value = '1750';
+  d.querySelector('#newCategory').value = 'tops';
+  d.querySelector('#addBtn').click();
+  await tick(60);
+
+  check('photo committed into images/', uploads.length === 1);
+  check('upload uses a PUT to the repo', uploads[0].url.includes('/contents/images/'));
+  check('uploaded filename is slugged + unique',
+    /images\/photo-shirt-[a-z0-9]+\.(png|jpg)$/.test(uploads[0].url.split('/contents/')[1]));
+  check('commit message describes the upload', uploads[0].body.message.includes('upload photo-shirt'));
+  check('image bytes are base64 encoded', typeof uploads[0].body.content === 'string'
+    && Buffer.from(uploads[0].body.content, 'base64').slice(1, 4).toString() === 'PNG');
+
+  const catalogNow = parseProducts(currentContent);
+  const added = catalogNow.find((p) => p.name === 'Photo Shirt');
+  check('new item points at the uploaded photo', !!added && /^images\/photo-shirt-/.test(added.img));
+  check('item saved after a successful upload', catalogNow.length === 6);
+
+  // A failing upload must not add the item
+  dom.window.fetch = (url, opts = {}) => {
+    if (String(url).includes('/contents/images/')) return Promise.resolve({ ok: false, status: 500 });
+    return prevFetch(url, opts);
+  };
+  const input2 = d.querySelector('#newPhoto');
+  Object.defineProperty(input2, 'files', { value: [makeFile(png, 'image/png', 'bad.png')], configurable: true });
+  d.querySelector('#newName').value = 'Should Not Exist';
+  d.querySelector('#newPrice').value = '500';
+  d.querySelector('#addBtn').click();
+  await tick(60);
+  check('failed upload reports an error', d.querySelector('#status').textContent.includes('Photo upload failed'));
+  check('failed upload does not add the item',
+    !parseProducts(currentContent).some((p) => p.name === 'Should Not Exist'));
+
+  // Non-image files are rejected outright
+  Object.defineProperty(d.querySelector('#newPhoto'), 'files',
+    { value: [makeFile(Buffer.from('hello'), 'text/plain', 'notes.txt')], configurable: true });
+  d.querySelector('#newName').value = 'Text File Item';
+  d.querySelector('#newPrice').value = '100';
+  d.querySelector('#addBtn').click();
+  await tick(60);
+  check('non-image file is rejected',
+    !parseProducts(currentContent).some((p) => p.name === 'Text File Item'));
+
+  dom.window.fetch = prevFetch;
+  // clean up so later sections see the expected catalog
+  const leftover = parseProducts(currentContent).find((p) => p.name === 'Photo Shirt');
+  if (leftover) {
+    const r = [...d.querySelectorAll('.admin-item')].find((x) => x.textContent.includes('Photo Shirt'));
+    if (r) { r.querySelector('.admin-remove').click(); await tick(40); }
+  }
 }
 
 console.log('\n[C] Orders list from the order-log endpoint');

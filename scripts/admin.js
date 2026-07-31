@@ -13,12 +13,20 @@ const ADMIN = {
   repo: 'online-clothing-store',
   branch: 'master',
   path: 'scripts/products.js',
+  imageDir: 'images',
   categories: ['tops', 'bottoms', 'outerwear', 'accessories'],
+  // Fallback list; the real list is read from the repo's images/ folder
+  // on connect, so newly uploaded photos appear automatically.
   images: [
     'images/tee.svg', 'images/hoodie.svg', 'images/trousers.svg',
     'images/dress.svg', 'images/overshirt.svg', 'images/cap.svg',
     'images/tote.svg', 'images/scarf.svg', 'images/product1.jpg',
   ],
+  // Phone photos are 3–12 MB; shrink before committing so the storefront
+  // stays fast and the repo doesn't bloat.
+  photoMaxDimension: 1400,
+  photoQuality: 0.82,
+  photoMaxBytes: 2 * 1024 * 1024, // hard stop if resizing is unavailable
 };
 
 let token = '';
@@ -47,6 +55,111 @@ function b64encode(str) {
 function b64decode(b64) {
   const bin = atob(b64.replace(/\s/g, ''));
   return new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)));
+}
+
+// Binary (image) → base64, chunked to avoid blowing the call stack.
+function b64encodeBytes(bytes) {
+  let bin = '';
+  const CHUNK = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+  }
+  return btoa(bin);
+}
+
+// ---------- Photo upload ----------
+function slugify(text) {
+  return String(text).toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40) || 'photo';
+}
+
+/* Downscale + re-encode a phone photo in the browser. Returns
+   { bytes, ext }. Falls back to the original file when canvas isn't
+   available (older browsers / non-visual environments), rejecting
+   anything too large to commit safely. */
+async function preparePhoto(file) {
+  const original = new Uint8Array(await file.arrayBuffer());
+
+  // SVGs and tiny files pass straight through.
+  if (file.type === 'image/svg+xml') return { bytes: original, ext: 'svg' };
+
+  try {
+    const bitmapUrl = URL.createObjectURL(file);
+    const img = await new Promise((resolve, reject) => {
+      const im = new Image();
+      im.onload = () => resolve(im);
+      im.onerror = () => reject(new Error('decode failed'));
+      im.src = bitmapUrl;
+    });
+
+    const max = ADMIN.photoMaxDimension;
+    const scale = Math.min(1, max / Math.max(img.width, img.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(img.width * scale);
+    canvas.height = Math.round(img.height * scale);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('no canvas context');
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+    const blob = await new Promise((resolve, reject) => {
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('encode failed'))),
+        'image/jpeg', ADMIN.photoQuality);
+    });
+    URL.revokeObjectURL(bitmapUrl);
+    return { bytes: new Uint8Array(await blob.arrayBuffer()), ext: 'jpg' };
+  } catch (e) {
+    // Couldn't resize — only allow the original through if it's modest.
+    if (original.length > ADMIN.photoMaxBytes) {
+      throw new Error(`That photo is ${(original.length / 1048576).toFixed(1)} MB and couldn't be resized on this browser. Please pick a smaller one.`);
+    }
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+    return { bytes: original, ext: ext || 'jpg' };
+  }
+}
+
+/* Commits the photo into images/ and returns its repo-relative path. */
+async function uploadPhoto(file, nameHint) {
+  if (!/^image\//.test(file.type)) throw new Error('That file is not an image.');
+  const { bytes, ext } = await preparePhoto(file);
+  const filename = `${slugify(nameHint || file.name.replace(/\.[^.]+$/, ''))}-${Date.now().toString(36)}.${ext}`;
+  const filePath = `${ADMIN.imageDir}/${filename}`;
+
+  const res = await fetch(
+    `https://api.github.com/repos/${ADMIN.owner}/${ADMIN.repo}/contents/${filePath}`,
+    {
+      method: 'PUT',
+      headers: ghHeaders(),
+      body: JSON.stringify({
+        message: `[catalog] upload ${filename}`,
+        content: b64encodeBytes(bytes),
+        branch: ADMIN.branch,
+      }),
+    }
+  );
+  if (res.status === 401 || res.status === 403) throw new Error('Token rejected — it needs Contents: Read and write.');
+  if (!res.ok) throw new Error(`Photo upload failed (${res.status}). The item was not saved.`);
+
+  if (!ADMIN.images.includes(filePath)) ADMIN.images.unshift(filePath);
+  return filePath;
+}
+
+/* Reads images/ from the repo so uploaded photos show up in the pickers. */
+async function refreshImageList() {
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${ADMIN.owner}/${ADMIN.repo}/contents/${ADMIN.imageDir}?ref=${ADMIN.branch}`,
+      { headers: ghHeaders() }
+    );
+    if (!res.ok) return;
+    const files = await res.json();
+    if (!Array.isArray(files)) return;
+    const found = files
+      .filter((f) => f.type === 'file' && /\.(jpe?g|png|webp|gif|svg)$/i.test(f.name))
+      .map((f) => `${ADMIN.imageDir}/${f.name}`);
+    if (found.length) ADMIN.images = found;
+  } catch (e) { /* keep the fallback list */ }
 }
 
 // ---------- products.js parse / serialize ----------
@@ -148,6 +261,30 @@ function categoryOptions(selected) {
     .join('');
 }
 
+function clearPhotoPicker() {
+  const input = $('#newPhoto');
+  if (input) input.value = '';
+  const prev = $('#newPhotoPreview');
+  if (prev) { prev.hidden = true; prev.removeAttribute('src'); }
+}
+
+// Shows a local preview of a chosen photo before it is uploaded.
+function wirePhotoPreview(input, preview) {
+  input.addEventListener('change', () => {
+    const file = input.files && input.files[0];
+    if (!file) { preview.hidden = true; preview.removeAttribute('src'); return; }
+    if (!/^image\//.test(file.type)) {
+      status('That file is not an image.', 'err');
+      input.value = '';
+      return;
+    }
+    try {
+      preview.src = URL.createObjectURL(file);
+      preview.hidden = false;
+    } catch (e) { /* preview is optional */ }
+  });
+}
+
 function imageOptions(selected) {
   return ADMIN.images
     .map((img) => `<option value="${img}"${img === selected ? ' selected' : ''}>${img.replace('images/', '')}</option>`)
@@ -196,6 +333,11 @@ function openEditForm(id, row) {
     <input type="text" class="edit-name" placeholder="Item name">
     <input type="number" class="edit-price" placeholder="Price in ₱" min="1" step="0.01" inputmode="decimal">
     <select class="edit-category">${categoryOptions(p.category)}</select>
+    <label class="photo-field">
+      <input type="file" class="edit-photo" accept="image/*">
+      <span>Replace photo…</span>
+    </label>
+    <img class="photo-preview edit-preview" hidden alt="">
     <select class="edit-image">${imageOptions(p.img)}</select>
     <input type="text" class="edit-badge" placeholder="Badge (optional)">
     <div class="edit-row">
@@ -206,6 +348,7 @@ function openEditForm(id, row) {
   form.querySelector('.edit-name').value = p.name;
   form.querySelector('.edit-price').value = p.price;
   form.querySelector('.edit-badge').value = p.badge || '';
+  wirePhotoPreview(form.querySelector('.edit-photo'), form.querySelector('.edit-preview'));
   form.querySelector('.edit-cancel').addEventListener('click', () => form.remove());
   form.querySelector('.edit-save').addEventListener('click', () => saveEdit(id, form));
 
@@ -220,14 +363,27 @@ async function saveEdit(id, form) {
   const name = form.querySelector('.edit-name').value.trim();
   const price = parseFloat(form.querySelector('.edit-price').value);
   const category = form.querySelector('.edit-category').value;
-  const img = form.querySelector('.edit-image').value;
   const badge = form.querySelector('.edit-badge').value.trim();
+  const photoInput = form.querySelector('.edit-photo');
+  const photo = photoInput && photoInput.files && photoInput.files[0];
+  let img = form.querySelector('.edit-image').value;
 
   if (!name) return status('Enter an item name.', 'err');
   if (!isFinite(price) || price <= 0) return status('Enter a valid price above zero.', 'err');
   // A different item must not already have this name
   if (products.some((p) => p.id !== id && p.name.toLowerCase() === name.toLowerCase())) {
     return status(`Another item is already named "${name}".`, 'err');
+  }
+
+  setBusy(true);
+  if (photo) {
+    status('Uploading photo…');
+    try {
+      img = await uploadPhoto(photo, name);
+    } catch (e) {
+      setBusy(false);
+      return status(e.message, 'err');
+    }
   }
 
   const before = { ...products[idx] };
@@ -237,10 +393,10 @@ async function saveEdit(id, form) {
   // Nothing changed? Skip the commit.
   if (JSON.stringify(before) === JSON.stringify(updated)) {
     form.remove();
+    setBusy(false);
     return status('No changes to save.');
   }
 
-  setBusy(true);
   status('Saving to GitHub…');
   try {
     products[idx] = updated;
@@ -263,8 +419,9 @@ async function addItem() {
   const name = $('#newName').value.trim();
   const price = parseFloat($('#newPrice').value);
   const category = $('#newCategory').value;
-  const img = $('#newImage').value;
   const badge = $('#newBadge').value.trim();
+  const photo = $('#newPhoto').files && $('#newPhoto').files[0];
+  let img = $('#newImage').value;
 
   if (!name) return status('Enter an item name.', 'err');
   if (!isFinite(price) || price <= 0) return status('Enter a valid price above zero.', 'err');
@@ -272,16 +429,29 @@ async function addItem() {
     return status(`"${name}" already exists — remove it first or pick another name.`, 'err');
   }
 
+  setBusy(true);
+  // Upload the photo first: if it fails, nothing is added.
+  if (photo) {
+    status('Uploading photo…');
+    try {
+      img = await uploadPhoto(photo, name);
+      $('#newImage').innerHTML = imageOptions(img);
+    } catch (e) {
+      setBusy(false);
+      return status(e.message, 'err');
+    }
+  }
+
   const item = { id: nextId(), name, price, category, img };
   if (badge) item.badge = badge;
 
-  setBusy(true);
   status('Saving to GitHub…');
   try {
     products.push(item);
     await commitCatalog(`add ${item.name} (${item.id})`);
     renderList();
     $('#newName').value = ''; $('#newPrice').value = ''; $('#newBadge').value = '';
+    clearPhotoPicker();
     status(`Added ${item.name} — live site updates in ~1–2 minutes.`);
   } catch (e) {
     products = products.filter((p) => p.id !== item.id);
@@ -404,6 +574,8 @@ async function connect() {
   status('Connecting…');
   try {
     await loadCatalog();
+    await refreshImageList();
+    $('#newImage').innerHTML = imageOptions();
     if ($('#rememberToken').checked) localStorage.setItem('saak_admin_token', token);
     sessionStorage.setItem('saak_admin_token', token);
     $('#authView').hidden = true;
@@ -450,6 +622,7 @@ function init() {
 
   // image choices for the add form
   $('#newImage').innerHTML = imageOptions();
+  wirePhotoPreview($('#newPhoto'), $('#newPhotoPreview'));
 
   $('#connectBtn').addEventListener('click', connect);
   $('#addBtn').addEventListener('click', addItem);
