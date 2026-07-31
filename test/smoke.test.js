@@ -71,63 +71,74 @@ check('cart line records chosen size L',
   [...document.querySelectorAll('.cart-item-info p')].some((p) => p.textContent.includes('Size L')));
 document.querySelectorAll('.cart-item [data-act="rm"]')[1].click(); // remove hoodie again
 
-console.log('\n[5] Checkout validation');
+console.log('\n[5] Checkout validation (GCash default)');
 document.querySelector('#checkoutBtn').click();
 check('checkout modal opens', document.querySelector('#checkoutModal').hidden === false);
-check('summary shows total due', txt('#checkoutSummary').includes('₱2,649.00'));
+check('summary shows total due', txt('#checkoutSummary').includes('\u20b12,649.00'));
+check('GCash is the default method', document.querySelector('#fieldsGcash').hidden === false);
+check('configured GCash number shown', txt('#gcashNumber') === '0917 000 0000');
+check('pay button states the sent amount', txt('#payBtn').includes('\u20b12,649.00'));
 document.querySelector('#payBtn').click();
 check('blocks empty delivery details', document.querySelector('#checkoutError').hidden === false);
 
 document.querySelector('#shipName').value = 'Alex Reyes';
 document.querySelector('#shipEmail').value = 'alex@example.com';
-document.querySelector('#shipAddress').value = '12 Harbor Lane';
-document.querySelector('#shipCity').value = 'Portsmouth';
-document.querySelector('#shipZip').value = 'PO1 2AB';
-document.querySelector('#walletId').value = 'alex@example.com';
-document.querySelector('#walletPin').value = '123';
+document.querySelector('#shipAddress').value = '12 Mabini Street';
+document.querySelector('#shipCity').value = 'Pasig';
+document.querySelector('#shipZip').value = '1600';
 document.querySelector('#payBtn').click();
-check('blocks short wallet PIN', txt('#checkoutError').includes('6 digits'));
+check('blocks missing GCash reference', txt('#checkoutError').includes('13-digit'));
+document.querySelector('#gcashRef').value = '12345';
+document.querySelector('#payBtn').click();
+check('blocks short GCash reference', txt('#checkoutError').includes('13-digit'));
 
-console.log('\n[6] E-wallet payment succeeds');
-check('wallet balance shows ₱20,000.00', txt('#walletBalance') === '₱20,000.00');
-document.querySelector('#walletPin').value = '123456';
+console.log('\n[6] GCash manual-transfer order succeeds');
+document.querySelector('#gcashRef').value = '1234567890123';
 document.querySelector('#payBtn').click();
 check('processing step shown', document.querySelector('#processingStep').hidden === false);
-check('e-wallet message shown', txt('#processingText').includes('e-wallet'));
 
 setTimeout(() => {
   check('success step shown', document.querySelector('#successStep').hidden === false);
   check('receipt has SAAK order id', txt('#receipt').includes('SAAK-'));
-  check('receipt shows e-wallet method', txt('#receipt').includes('E-Wallet'));
-  check('wallet debited: ₱20,000 − ₱2,649 = ₱17,351.00', txt('#receipt').includes('₱17,351.00'));
-  check('demo copy is honest (no fake email claim)', txt('#successDetail').includes('demo') && !txt('#successDetail').includes('receipt was sent'));
-  check('cart cleared after purchase', document.querySelector('#cartCount').hidden === true);
+  check('receipt shows GCash method', txt('#receipt').includes('GCash'));
+  check('receipt shows payment reference', txt('#receipt').includes('1234567890123'));
+  check('verification-first copy (no false paid claim)', txt('#successDetail').includes('verified'));
+  const mail = document.querySelector('#orderEmailBtn').href;
+  check('order email goes to configured store address', mail.startsWith('mailto:orders@saak-store.example'));
+  const body = decodeURIComponent(mail);
+  check('order email lists the item', body.includes('Studio Knit'));
+  check('order email carries the delivery address', body.includes('12 Mabini Street') && body.includes('Pasig'));
+  check('order email carries the payment reference', body.includes('ref 1234567890123'));
+  check('cart cleared after order', document.querySelector('#cartCount').hidden === true);
   check('cart persisted to localStorage', window.localStorage.getItem('saak_cart') === '[]');
 
-  console.log('\n[7] Insufficient balance is rejected');
-  window.localStorage.setItem('saak_wallet_php', '10');
-  // Re-run app fresh with low balance
+  console.log('\n[7] Maya and COD paths');
   const dom2 = new JSDOM(html, { runScripts: 'outside-only', url: 'http://localhost/' });
-  dom2.window.localStorage.setItem('saak_wallet_php', '10');
   dom2.window.eval(js);
   dom2.window.document.dispatchEvent(new dom2.window.Event('DOMContentLoaded', { bubbles: true }));
   const d2 = dom2.window.document;
-  d2.querySelectorAll('.product-item')[0].querySelector('.buy-btn').click(); // Buy now: ₱2,499 + ₱150 ship
+  d2.querySelectorAll('.product-item')[0].querySelector('.buy-btn').click(); // \u20b12,499 + \u20b1150 ship
   check('buy-now opens checkout directly', d2.querySelector('#checkoutModal').hidden === false);
-  d2.querySelector('#shipName').value = 'A'; d2.querySelector('#shipEmail').value = 'a@b.co';
-  d2.querySelector('#shipAddress').value = 'x'; d2.querySelector('#shipCity').value = 'y'; d2.querySelector('#shipZip').value = 'z';
-  d2.querySelector('#walletId').value = 'a@b.co'; d2.querySelector('#walletPin').value = '111111';
-  d2.querySelector('#payBtn').click();
-  check('insufficient balance blocked', d2.querySelector('#checkoutError').textContent.includes('Insufficient'));
 
-  console.log('\n[8] Card + COD paths');
-  const cardLabel = d2.querySelector('[data-method="card"]');
-  cardLabel.click();
-  check('card fields revealed', d2.querySelector('#fieldsCard').hidden === false && d2.querySelector('#fieldsEwallet').hidden === true);
   d2.querySelector('[data-method="cod"]').click();
-  check('COD adds ₱50.00 fee to total', d2.querySelector('#checkoutSummary').textContent.includes('₱2,699.00'));
+  check('COD adds \u20b150.00 fee to total', d2.querySelector('#checkoutSummary').textContent.includes('\u20b12,699.00'));
   check('COD button says Place order', d2.querySelector('#payBtn').textContent === 'Place order');
 
-  console.log(`\nRESULT: ${passed} passed, ${failed} failed`);
-  process.exit(failed ? 1 : 0);
-}, 2200);
+  d2.querySelector('[data-method="maya"]').click();
+  check('Maya fields revealed', d2.querySelector('#fieldsMaya').hidden === false && d2.querySelector('#fieldsGcash').hidden === true);
+  check('Maya total drops COD fee', d2.querySelector('#checkoutSummary').textContent.includes('\u20b12,649.00'));
+  d2.querySelector('#shipName').value = 'B Cruz'; d2.querySelector('#shipEmail').value = 'b@x.ph';
+  d2.querySelector('#shipAddress').value = '7 Rizal Ave'; d2.querySelector('#shipCity').value = 'Cebu'; d2.querySelector('#shipZip').value = '6000';
+  d2.querySelector('#mayaRef').value = 'MY';
+  d2.querySelector('#payBtn').click();
+  check('blocks too-short Maya reference', d2.querySelector('#checkoutError').hidden === false);
+  d2.querySelector('#mayaRef').value = 'MAYA12345678';
+  d2.querySelector('#payBtn').click();
+
+  setTimeout(() => {
+    check('Maya order succeeds', d2.querySelector('#successStep').hidden === false);
+    check('receipt shows Maya + reference', d2.querySelector('#receipt').textContent.includes('Maya') && d2.querySelector('#receipt').textContent.includes('MAYA12345678'));
+    console.log(`\nRESULT: ${passed} passed, ${failed} failed`);
+    process.exit(failed ? 1 : 0);
+  }, 1800);
+}, 1800);

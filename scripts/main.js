@@ -10,6 +10,11 @@
 // Business app at https://developer.paypal.com and paste its LIVE client
 // ID here, then rebuild standalone.html. See README → "Real payments".
 const CONFIG = {
+  // Orders are emailed here (GitHub Pages has no backend to record them).
+  storeEmail: 'orders@saak-store.example',        // ← change to your email
+  // Manual-transfer accounts shown at checkout — change to your real ones.
+  gcash: { name: 'SAAK Store', number: '0917 000 0000' },
+  maya:  { name: 'SAAK Store', number: '0918 000 0000' },
   paypalClientId: 'sb',
   currency: 'PHP',            // Philippine Peso — supported by PayPal
   paypalSdkTimeoutMs: 12000,
@@ -25,7 +30,6 @@ const SIZES = ['XS', 'S', 'M', 'L', 'XL'];
 const FREE_SHIPPING_THRESHOLD = 2500;   // ₱
 const SHIPPING_FLAT = 150;              // ₱ standard courier rate
 const COD_FEE = 50;                     // ₱ cash-handling fee
-const WALLET_START_BALANCE = 20000;     // ₱ demo wallet balance
 
 // ---------- Safe storage (falls back to memory if unavailable) ----------
 const store = (() => {
@@ -52,7 +56,6 @@ const store = (() => {
 
 // ---------- State ----------
 let cart = store.get('saak_cart', []);            // [{id, size, qty}]
-let walletBalance = store.get('saak_wallet_php', WALLET_START_BALANCE);
 let activeFilter = 'all';
 let activeSort = 'featured';
 let searchTerm = '';
@@ -261,7 +264,7 @@ function closeCart() {
 }
 
 // ---------- Checkout ----------
-let selectedMethod = 'ewallet';
+let selectedMethod = 'gcash';
 
 function orderTotal() {
   const subtotal = cartSubtotal();
@@ -282,14 +285,18 @@ function renderCheckoutSummary() {
     <div class="sum-row muted"><span>Shipping</span><span class="mono">${shipping === 0 ? 'Free' : money(shipping)}</span></div>
     ${codRow}
     <div class="sum-row total"><span>Total due</span><span class="mono">${money(orderTotal())}</span></div>`;
-  $('#walletBalance').textContent = money(walletBalance);
-
   // PayPal replaces our pay button with its own
   $('#payBtn').hidden = selectedMethod === 'paypal';
-  $('#payBtn').textContent = selectedMethod === 'cod' ? 'Place order' : `Pay ${money(orderTotal())}`;
-  $('#checkoutFootnote').innerHTML = selectedMethod === 'paypal'
-    ? '<i class="fas fa-lock"></i> PayPal handles your payment details — this site never sees them.'
-    : '<i class="fas fa-lock"></i> E-wallet, card, and cash on delivery are demo methods — no real money moves.';
+  $('#payBtn').textContent = selectedMethod === 'cod'
+    ? 'Place order'
+    : `I've sent ${money(orderTotal())} — place order`;
+  const footnotes = {
+    gcash: '<i class="fas fa-lock"></i> Manual transfer — we verify your payment reference before shipping.',
+    maya: '<i class="fas fa-lock"></i> Manual transfer — we verify your payment reference before shipping.',
+    cod: '<i class="fas fa-lock"></i> Pay cash to the courier when your order arrives.',
+    paypal: '<i class="fas fa-lock"></i> PayPal handles your payment details — this site never sees them.',
+  };
+  $('#checkoutFootnote').innerHTML = footnotes[selectedMethod];
 }
 
 function openCheckout() {
@@ -337,39 +344,60 @@ function validateCheckout() {
   // PayPal collects and validates payment details in its own window.
   if (selectedMethod === 'paypal') return null;
 
-  if (selectedMethod === 'ewallet') {
-    const walletId = $('#walletId').value.trim();
-    const pin = $('#walletPin').value.trim();
-    if (!walletId) return 'Enter the email or phone linked to your e-wallet.';
-    if (!/^\d{6}$/.test(pin)) return 'Your wallet PIN is 6 digits.';
-    if (orderTotal() > walletBalance) return `Insufficient wallet balance (${money(walletBalance)}). Top up or choose another method.`;
+  if (selectedMethod === 'gcash' && !/^\d{13}$/.test($('#gcashRef').value.trim())) {
+    return 'Enter the 13-digit reference number from your GCash receipt.';
   }
-
-  if (selectedMethod === 'card') {
-    const num = $('#cardNumber').value.replace(/\s/g, '');
-    const exp = $('#cardExpiry').value.trim();
-    const cvc = $('#cardCvc').value.trim();
-    if (!/^\d{13,19}$/.test(num)) return 'Enter a valid card number.';
-    if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(exp)) return 'Expiry must be MM/YY.';
-    if (!/^\d{3,4}$/.test(cvc)) return 'Enter the 3–4 digit CVC.';
+  if (selectedMethod === 'maya' && !/^[A-Za-z0-9]{6,20}$/.test($('#mayaRef').value.trim())) {
+    return 'Enter the reference number from your Maya receipt (6–20 characters).';
   }
 
   return null; // valid
 }
 
-/* Shared success path for every payment method. `extraRows` lets a
-   gateway add its own receipt lines (e.g. a PayPal transaction ID). */
-function finalizeOrder(methodLabel, total, extraRows = '', isCod = false) {
-  const orderId = 'SAAK-' + Date.now().toString(36).toUpperCase();
+/* The store has no backend, so the order itself must travel to the
+   store owner — via a prefilled email (or copied text) the customer
+   sends. This is how the order actually reaches the store. */
+let lastOrderText = '';
 
-  // Honest copy: this site sends no emails. PayPal emails its own
-  // receipt to the buyer; the demo methods charge nothing at all.
+function buildOrderText(orderId, methodLabel, total, reference) {
+  const items = cart.map((l) => {
+    const p = findProduct(l.id);
+    return `- ${l.qty} x ${p.name}${l.size ? ' (' + l.size + ')' : ''} — ${money(p.price * l.qty)}`;
+  }).join('\n');
+  return [
+    `Order ${orderId}`,
+    '',
+    items,
+    `Total: ${money(total)}`,
+    `Payment: ${methodLabel}${reference ? ' — ref ' + reference : ''}`,
+    '',
+    `Deliver to: ${$('#shipName').value.trim()}`,
+    `${$('#shipAddress').value.trim()}, ${$('#shipCity').value.trim()} ${$('#shipZip').value.trim()}, ${$('#shipCountry').value}`,
+    `Email: ${$('#shipEmail').value.trim()}`,
+  ].join('\n');
+}
+
+/* Shared success path for every payment method. `extraRows` lets a
+   method add its own receipt lines (payment reference, PayPal txn). */
+function finalizeOrder(methodLabel, total, extraRows = '', isCod = false, reference = '') {
+  const orderId = 'SAAK-' + Date.now().toString(36).toUpperCase();
+  const isPayPal = methodLabel === 'PayPal';
+
+  // Build the order message BEFORE the cart is cleared
+  lastOrderText = buildOrderText(orderId, methodLabel, total, reference);
+  $('#orderEmailBtn').href = 'mailto:' + CONFIG.storeEmail +
+    '?subject=' + encodeURIComponent('Order ' + orderId) +
+    '&body=' + encodeURIComponent(lastOrderText);
+
   $('#successDetail').textContent =
-    methodLabel === 'PayPal'
+    isPayPal
       ? `${money(total)} paid via PayPal. PayPal will email the receipt to your PayPal account.`
       : isCod
-        ? `Demo order placed — in a live store you would pay ${money(total)} to the courier on delivery.`
-        : `${money(total)} paid via ${methodLabel} (demo — no real charge was made).`;
+        ? `Order placed — prepare ${money(total)} in cash for the courier.`
+        : `Order recorded with your ${methodLabel} reference. We ship as soon as the transfer is verified.`;
+  $('#sendOrderText').textContent = isPayPal
+    ? 'Optional: email us your order details for faster processing.'
+    : 'Last step: email us your order so we can process it.';
   $('#receipt').innerHTML = `
     <div class="sum-row"><span>Order</span><span>${orderId}</span></div>
     <div class="sum-row"><span>Method</span><span>${methodLabel}</span></div>
@@ -390,21 +418,17 @@ function placeOrder() {
   const total = orderTotal();
   const method = selectedMethod;
   showStep('processingStep');
-  $('#processingText').textContent =
-    method === 'ewallet' ? 'Contacting your e-wallet…' :
-    method === 'card' ? 'Authorizing your card…' : 'Placing your order…';
+  $('#processingText').textContent = 'Recording your order…';
 
-  // Simulated payment gateway round-trip (demo methods only)
   setTimeout(() => {
-    let extra = '';
-    if (method === 'ewallet') {
-      walletBalance = Math.round((walletBalance - total) * 100) / 100;
-      store.set('saak_wallet_php', walletBalance);
-      extra = `<div class="sum-row"><span>Wallet balance</span><span>${money(walletBalance)}</span></div>`;
-    }
-    const label = method === 'ewallet' ? 'E-Wallet (SAAK Pay)' : method === 'card' ? 'Card' : 'Cash on delivery';
-    finalizeOrder(label, total, extra, method === 'cod');
-  }, 1600);
+    const reference = method === 'gcash' ? $('#gcashRef').value.trim()
+      : method === 'maya' ? $('#mayaRef').value.trim() : '';
+    const label = method === 'gcash' ? 'GCash (manual transfer)'
+      : method === 'maya' ? 'Maya (manual transfer)' : 'Cash on delivery';
+    const extra = reference
+      ? `<div class="sum-row"><span>Payment ref</span><span>${reference}</span></div>` : '';
+    finalizeOrder(label, total, extra, method === 'cod', reference);
+  }, 1200);
 }
 
 // ---------- PayPal (real third-party gateway) ----------
@@ -547,8 +571,8 @@ function init() {
       label.classList.add('is-selected');
       label.querySelector('input').checked = true;
       selectedMethod = label.dataset.method;
-      $('#fieldsEwallet').hidden = selectedMethod !== 'ewallet';
-      $('#fieldsCard').hidden = selectedMethod !== 'card';
+      $('#fieldsGcash').hidden = selectedMethod !== 'gcash';
+      $('#fieldsMaya').hidden = selectedMethod !== 'maya';
       $('#fieldsCod').hidden = selectedMethod !== 'cod';
       $('#fieldsPaypal').hidden = selectedMethod !== 'paypal';
       if (selectedMethod === 'paypal') renderPayPalButtons();
@@ -556,17 +580,31 @@ function init() {
     });
   });
 
-  // Card number formatting (groups of 4)
-  $('#cardNumber').addEventListener('input', (e) => {
-    e.target.value = e.target.value.replace(/\D/g, '').slice(0, 16).replace(/(\d{4})(?=\d)/g, '$1 ');
+  // Show the configured transfer accounts
+  $('#gcashNumber').textContent = CONFIG.gcash.number;
+  $('#gcashName').textContent = CONFIG.gcash.name;
+  $('#mayaNumber').textContent = CONFIG.maya.number;
+  $('#mayaName').textContent = CONFIG.maya.name;
+
+  // GCash references are digits only
+  $('#gcashRef').addEventListener('input', (e) => {
+    e.target.value = e.target.value.replace(/\D/g, '').slice(0, 13);
   });
-  $('#cardExpiry').addEventListener('input', (e) => {
-    let v = e.target.value.replace(/\D/g, '').slice(0, 4);
-    if (v.length > 2) v = v.slice(0, 2) + '/' + v.slice(2);
-    e.target.value = v;
-  });
-  $('#walletPin').addEventListener('input', (e) => {
-    e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6);
+
+  // Copy order details (post-purchase)
+  $('#orderCopyBtn').addEventListener('click', () => {
+    const done = () => toast('Order details copied');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(lastOrderText).then(done, () => toast('Copy failed — use the email button', 'fa-circle-info'));
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = lastOrderText;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); done(); }
+      catch { toast('Copy failed — use the email button', 'fa-circle-info'); }
+      ta.remove();
+    }
   });
 
   // Newsletter + contact (demo handlers)

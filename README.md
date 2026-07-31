@@ -55,6 +55,31 @@ Push the repo, then Settings → Pages → "Deploy from a branch" → `master`,
 subpath. After editing the catalog with `manage-products.js`, commit and
 push — Pages redeploys automatically.
 
+## Payment methods (Philippine market)
+Research-driven lineup: GCash is the dominant PH wallet (~94M users) and
+Maya is second — together they cover ~90% of wallet users — while cash on
+delivery still carries roughly a quarter of e-commerce value, and card
+penetration is low. The checkout therefore offers, in order: **GCash**,
+**Maya**, **Cash on delivery**, and **PayPal**. The old demo wallet and the
+demo card form were removed.
+
+GCash and Maya use the manual-transfer pattern common among small PH
+sellers: the buyer sends the exact total to your account shown at checkout,
+enters the reference number from their receipt, and you verify it before
+shipping. Set your real details in `scripts/main.js` → CONFIG:
+
+    storeEmail: 'orders@yourstore.ph',
+    gcash: { name: 'Your Name', number: '09XX XXX XXXX' },
+    maya:  { name: 'Your Name', number: '09XX XXX XXXX' },
+
+**How orders reach you:** GitHub Pages has no backend, so after every
+order the customer gets an "Email order to store" button (prefilled with
+items, total, delivery address, and payment reference, addressed to
+`storeEmail`) plus a copy button. Verify GCash/Maya references in your own
+app before shipping. When volume grows, graduate to a PH gateway
+(PayMongo, Xendit, Maya Business) for automatic confirmation — that
+requires the server-side piece described below.
+
 ## Real payments (PayPal)
 The checkout includes a **PayPal** option — a real third-party gateway that
 runs fully client-side, so it works on GitHub Pages with no backend. Out of

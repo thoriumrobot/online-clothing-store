@@ -34,7 +34,7 @@ console.log('\n[A] Nothing hidden is visible on page load (computed styles)');
   check('search bar is display:none on load', displayOf('#searchBar') === 'none');
   check('cart badge is display:none on load', displayOf('#cartCount') === 'none');
   check('overlay is display:none on load', displayOf('#overlay') === 'none');
-  check('card fields hidden while e-wallet selected', displayOf('#fieldsCard') === 'none');
+  check('Maya fields hidden while GCash selected', displayOf('#fieldsMaya') === 'none');
   check('stylesheet forces [hidden] to win', /\[hidden\]\s*\{\s*display:\s*none\s*!important/.test(
     fs.readFileSync(path.join(root, 'styles', 'style.css'), 'utf8')));
 

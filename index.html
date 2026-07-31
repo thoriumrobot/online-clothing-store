@@ -106,7 +106,7 @@
             <div class="feature">
                 <i class="fas fa-wallet"></i>
                 <h3>E-wallet checkout</h3>
-                <p>Buy any piece in a couple of taps. Check out with SAAK Pay, GCash, Maya, or PayPal — no card required.</p>
+                <p>Buy any piece in a couple of taps. Check out with GCash, Maya, PayPal, or cash on delivery — no card required.</p>
             </div>
             <div class="feature">
                 <i class="fas fa-truck-fast"></i>
@@ -197,7 +197,7 @@
             <div class="cart-row muted"><span>Shipping</span><span class="mono" id="cartShipping">—</span></div>
             <div class="cart-row total"><span>Total</span><span class="mono" id="cartTotal">₱0.00</span></div>
             <button class="btn btn-primary btn-block" id="checkoutBtn">Checkout</button>
-            <p class="cart-secure"><i class="fas fa-lock"></i> Secure checkout — e-wallet, card, or cash on delivery</p>
+            <p class="cart-secure"><i class="fas fa-lock"></i> Checkout with GCash, Maya, PayPal, or cash on delivery</p>
         </div>
     </aside>
 
@@ -235,21 +235,21 @@
 
                 <h4 class="form-title">Payment method</h4>
                 <div class="pay-methods" id="payMethods">
-                    <label class="pay-method is-selected" data-method="ewallet">
-                        <input type="radio" name="payMethod" value="ewallet" checked>
-                        <i class="fas fa-wallet"></i>
+                    <label class="pay-method is-selected" data-method="gcash">
+                        <input type="radio" name="payMethod" value="gcash" checked>
+                        <i class="fas fa-mobile-screen-button"></i>
                         <span>
-                            <strong>E-Wallet</strong>
-                            <small>SAAK Pay, GCash, Maya &amp; more — instant</small>
+                            <strong>GCash</strong>
+                            <small>Send via the GCash app, then enter your reference no.</small>
                         </span>
-                        <em class="pay-badge">Fastest</em>
+                        <em class="pay-badge">Most used</em>
                     </label>
-                    <label class="pay-method" data-method="card">
-                        <input type="radio" name="payMethod" value="card">
-                        <i class="fas fa-credit-card"></i>
+                    <label class="pay-method" data-method="maya">
+                        <input type="radio" name="payMethod" value="maya">
+                        <i class="fas fa-mobile-screen-button"></i>
                         <span>
-                            <strong>Credit / debit card</strong>
-                            <small>Visa, Mastercard, Amex</small>
+                            <strong>Maya</strong>
+                            <small>Send via the Maya app, then enter your reference no.</small>
                         </span>
                     </label>
                     <label class="pay-method" data-method="cod">
@@ -271,23 +271,24 @@
                     </label>
                 </div>
 
-                <!-- E-wallet fields -->
-                <div class="pay-fields" id="fieldsEwallet">
+                <!-- GCash manual transfer -->
+                <div class="pay-fields" id="fieldsGcash">
                     <div class="wallet-box">
-                        <div class="wallet-brand"><i class="fas fa-wallet"></i> SAAK Pay <span class="wallet-demo">demo wallet</span></div>
-                        <div class="wallet-balance">Balance <strong class="mono" id="walletBalance">₱0.00</strong></div>
+                        <div class="wallet-brand"><i class="fas fa-mobile-screen-button"></i> GCash <span class="wallet-demo">manual transfer</span></div>
+                        <div class="wallet-balance">Send to <strong class="mono" id="gcashNumber"></strong></div>
                     </div>
-                    <input type="text" id="walletId" placeholder="Wallet email or phone number">
-                    <input type="password" id="walletPin" placeholder="6-digit wallet PIN" maxlength="6" inputmode="numeric">
+                    <p class="cod-note"><i class="fas fa-circle-info"></i> Send the exact total to the GCash account above (account name: <span id="gcashName"></span>), then enter the 13-digit reference number from your GCash receipt. We verify every reference before shipping.</p>
+                    <input type="text" id="gcashRef" placeholder="GCash reference number (13 digits)" inputmode="numeric" maxlength="13">
                 </div>
 
-                <!-- Card fields -->
-                <div class="pay-fields" id="fieldsCard" hidden>
-                    <input type="text" id="cardNumber" placeholder="Card number" inputmode="numeric" maxlength="19">
-                    <div class="form-grid">
-                        <input type="text" id="cardExpiry" placeholder="MM/YY" maxlength="5">
-                        <input type="password" id="cardCvc" placeholder="CVC" inputmode="numeric" maxlength="4">
+                <!-- Maya manual transfer -->
+                <div class="pay-fields" id="fieldsMaya" hidden>
+                    <div class="wallet-box">
+                        <div class="wallet-brand"><i class="fas fa-mobile-screen-button"></i> Maya <span class="wallet-demo">manual transfer</span></div>
+                        <div class="wallet-balance">Send to <strong class="mono" id="mayaNumber"></strong></div>
                     </div>
+                    <p class="cod-note"><i class="fas fa-circle-info"></i> Send the exact total to the Maya account above (account name: <span id="mayaName"></span>), then enter the reference number from your Maya receipt. We verify every reference before shipping.</p>
+                    <input type="text" id="mayaRef" placeholder="Maya reference number" maxlength="20">
                 </div>
 
                 <!-- COD note -->
@@ -320,7 +321,10 @@
                 <h4>Payment successful</h4>
                 <p class="muted" id="successDetail"></p>
                 <div class="receipt mono" id="receipt"></div>
-                <button class="btn btn-primary btn-block" id="doneBtn">Continue shopping</button>
+                <p class="cod-note" id="sendOrderNote"><i class="fas fa-envelope"></i> <span id="sendOrderText">Last step: email us your order so we can process it.</span></p>
+                <a class="btn btn-primary btn-block" id="orderEmailBtn" href="#">Email order to store</a>
+                <button class="btn btn-ghost btn-block" id="orderCopyBtn">Copy order details</button>
+                <button class="btn btn-ghost btn-block" id="doneBtn">Continue shopping</button>
             </div>
         </div>
     </div>
