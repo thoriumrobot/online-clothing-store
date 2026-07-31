@@ -15,7 +15,7 @@ const CONFIG = {
   // Optional: also POST every order to this URL (e.g. a Google Apps
   // Script that appends to a spreadsheet — see README → "Order list").
   // Leave '' to disable.
-  orderLogUrl: '',
+  orderLogUrl: 'https://script.google.com/macros/s/AKfycbxY4nm5q9E1TKff6SiaNNrVeB5KKegttaBHwr5UIVX2qaXlbLWOAkZaP2B-ZUzQmchR/exec',
   // Manual-transfer accounts shown at checkout — change to your real ones.
   gcash: { name: 'SAAK Store', number: '+639305314317' },
   bank:  { bank: 'BPI', name: 'SAAK Store', number: '1234 5678 90' },
