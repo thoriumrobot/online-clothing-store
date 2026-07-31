@@ -148,6 +148,10 @@ real wallet PINs or card numbers in front-end code.
 
 ## Tests
     npm install jsdom
-    node test/smoke.test.js             # 33 checks: cart, filters, checkout, e-wallet flow
-    node test/catalog.test.js           # 23 checks: standalone build, CLI, peso pricing, sort, progress
-    node test/visibility-paypal.test.js # 20 checks: nothing hidden shows on load; PayPal flow
+    npm install          # installs jsdom (test-only dependency)
+    npm test             # runs all three suites (~100 checks)
+    npm run build        # rebuilds standalone.html
+
+    node test/smoke.test.js             # cart, filters, checkout, GCash/Maya/COD flows, order log
+    node test/visibility-paypal.test.js # nothing hidden renders on load; full PayPal path
+    node test/catalog.test.js           # standalone build, CLI, peso pricing, sort, progress

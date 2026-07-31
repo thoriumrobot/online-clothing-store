@@ -100,6 +100,7 @@ console.log('\n[B] PayPal option (stubbed SDK)');
   check('success step shown after capture', d.querySelector('#successStep').hidden === false);
   check('receipt includes PayPal txn id', d.querySelector('#receipt').textContent.includes('TXN-TEST-123'));
   check('PayPal copy: receipt comes from PayPal', d.querySelector('#successDetail').textContent.includes('PayPal will email the receipt'));
+  check('order email carries the PayPal txn id', decodeURIComponent(d.querySelector('#orderEmailBtn').href).includes('TXN-TEST-123'));
   check('no false "receipt was sent" claim', !d.querySelector('#successDetail').textContent.includes('was sent to'));
   check('cart cleared after PayPal payment', d.querySelector('#cartCount').hidden === true);
 

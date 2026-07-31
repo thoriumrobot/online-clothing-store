@@ -523,7 +523,7 @@ function renderPayPalButtons() {
       onApprove: (data, actions) => actions.order.capture().then((details) => {
         const txn = details && details.id ? details.id : data.orderID;
         finalizeOrder('PayPal', orderTotal(),
-          `<div class="sum-row"><span>PayPal txn</span><span>${txn}</span></div>`);
+          `<div class="sum-row"><span>PayPal txn</span><span>${txn}</span></div>`, false, txn);
       }),
       onError: () => showError('PayPal could not complete the payment. Try again or choose another method.'),
     }).render(box);
