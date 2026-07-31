@@ -55,7 +55,7 @@ console.log('\n[B] PayPal option (stubbed SDK)');
     Buttons: (opts) => { buttonOpts = opts; return { render: (el) => { el.innerHTML = '<div class="pp-stub">PayPal buttons</div>'; } }; },
   };
 
-  d.querySelector('.product-item .buy-btn').click(); // $49 + $5.99 shipping
+  d.querySelector('.product-item .buy-btn').click(); // ₱2,499 + ₱150 shipping
   d.querySelector('[data-method="paypal"]').click();
   await new Promise((r) => setTimeout(r, 0)); // button render resolves a microtask later
 
@@ -82,8 +82,8 @@ console.log('\n[B] PayPal option (stubbed SDK)');
 
   // createOrder sends the exact cart total in the right currency
   const order = buttonOpts.createOrder({}, { order: { create: (o) => o } });
-  check('order amount equals total ($54.99)', order.purchase_units[0].amount.value === '54.99');
-  check('order currency is USD', order.purchase_units[0].amount.currency_code === 'USD');
+  check('order amount equals total (₱2,649.00)', order.purchase_units[0].amount.value === '2649.00');
+  check('order currency is PHP', order.purchase_units[0].amount.currency_code === 'PHP');
 
   // approve → capture → receipt with transaction id, cart cleared
   await buttonOpts.onApprove({ orderID: 'FALLBACK' }, {

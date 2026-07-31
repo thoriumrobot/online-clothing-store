@@ -34,14 +34,17 @@ next page load (rebuild `standalone.html` to see them there too).
 
 ## Features
 - 9-product catalog with sizes, badges, category filters, and live search
-- Cart drawer: quantity +/-, remove, subtotal, free shipping over $75
+- All prices in Philippine Pesos (₱) with proper thousands formatting
+- Sort control (featured, price low/high, name) alongside category filters
+- Cart drawer: quantity +/-, remove, subtotal, free shipping over ₱2,500,
+  and a progress bar showing how close the order is to free shipping
 - "Buy now" one-click path straight into checkout
 - Checkout modal: delivery details + payment method selection
-  - **E-Wallet (default)** — demo "SAAK Pay" wallet with a $500 starting
+  - **E-Wallet (default)** — demo "SAAK Pay" wallet with a ₱20,000 starting
     balance, wallet ID + 6-digit PIN, insufficient-balance handling,
     and a receipt showing the remaining balance
   - Card — number/expiry/CVC with input formatting and validation
-  - Cash on delivery — adds a $2.00 handling fee
+  - Cash on delivery — adds a ₱50.00 handling fee
 - Order confirmation with order ID; cart and wallet persist via localStorage
 - Toasts, empty states, Escape-to-close, keyboard focus styles,
   reduced-motion support, responsive down to mobile
@@ -60,8 +63,9 @@ the box it uses PayPal's **sandbox** (`paypalClientId: 'sb'` in
 
 1. Create a Business app at https://developer.paypal.com and copy its
    **Live** client ID.
-2. Paste it into `CONFIG.paypalClientId` in `scripts/main.js`, set your
-   `currency`, and run `node tools/build-standalone.js`.
+2. Paste it into `CONFIG.paypalClientId` in `scripts/main.js` (currency is
+   already set to `PHP` — Philippine Peso), and run
+   `node tools/build-standalone.js`.
 3. Test a real transaction end to end before announcing the store.
 
 Honest caveats: with a purely client-side integration the order amount is
@@ -69,6 +73,9 @@ set in the browser, so a technical buyer could tamper with their own
 checkout. PayPal supports this integration style, but once real volume
 matters, add server-side order creation and webhook verification (that
 needs hosting with functions — Netlify/Vercel/Cloudflare — or a small API).
+For direct GCash / Maya acceptance (rather than via PayPal), you'd use a
+Philippine gateway such as PayMongo, Xendit, or Maya Business — all of
+which require that same server-side piece.
 
 The other checkout methods (SAAK Pay e-wallet, card, cash on delivery)
 remain **simulations** — no real money moves through them. Never collect
@@ -77,5 +84,5 @@ real wallet PINs or card numbers in front-end code.
 ## Tests
     npm install jsdom
     node test/smoke.test.js             # 33 checks: cart, filters, checkout, e-wallet flow
-    node test/catalog.test.js           # 12 checks: standalone build, load-failure error, CLI
+    node test/catalog.test.js           # 23 checks: standalone build, CLI, peso pricing, sort, progress
     node test/visibility-paypal.test.js # 20 checks: nothing hidden shows on load; PayPal flow

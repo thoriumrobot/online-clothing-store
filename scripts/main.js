@@ -11,7 +11,7 @@
 // ID here, then rebuild standalone.html. See README → "Real payments".
 const CONFIG = {
   paypalClientId: 'sb',
-  currency: 'USD',
+  currency: 'PHP',            // Philippine Peso — supported by PayPal
   paypalSdkTimeoutMs: 12000,
 };
 
@@ -22,10 +22,10 @@ const PRODUCTS = (typeof window !== 'undefined' && window.SAAK_PRODUCTS) || [];
 
 const SIZED_CATEGORIES = ['tops', 'bottoms', 'outerwear'];
 const SIZES = ['XS', 'S', 'M', 'L', 'XL'];
-const FREE_SHIPPING_THRESHOLD = 75;
-const SHIPPING_FLAT = 5.99;
-const COD_FEE = 2.00;
-const WALLET_START_BALANCE = 500.00;
+const FREE_SHIPPING_THRESHOLD = 2500;   // ₱
+const SHIPPING_FLAT = 150;              // ₱ standard courier rate
+const COD_FEE = 50;                     // ₱ cash-handling fee
+const WALLET_START_BALANCE = 20000;     // ₱ demo wallet balance
 
 // ---------- Safe storage (falls back to memory if unavailable) ----------
 const store = (() => {
@@ -52,13 +52,14 @@ const store = (() => {
 
 // ---------- State ----------
 let cart = store.get('saak_cart', []);            // [{id, size, qty}]
-let walletBalance = store.get('saak_wallet', WALLET_START_BALANCE);
+let walletBalance = store.get('saak_wallet_php', WALLET_START_BALANCE);
 let activeFilter = 'all';
+let activeSort = 'featured';
 let searchTerm = '';
 
 // ---------- Helpers ----------
 const $ = (sel) => document.querySelector(sel);
-const money = (n) => '$' + n.toFixed(2);
+const money = (n) => '₱' + n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const findProduct = (id) => PRODUCTS.find((p) => p.id === id);
 const cartCount = () => cart.reduce((s, i) => s + i.qty, 0);
 const cartSubtotal = () => cart.reduce((s, i) => s + findProduct(i.id).price * i.qty, 0);
@@ -100,6 +101,9 @@ function renderProducts() {
     (activeFilter === 'all' || p.category === activeFilter) &&
     (!term || p.name.toLowerCase().includes(term) || p.category.includes(term))
   );
+  if (activeSort === 'price-asc') visible.sort((a, b) => a.price - b.price);
+  else if (activeSort === 'price-desc') visible.sort((a, b) => b.price - a.price);
+  else if (activeSort === 'name') visible.sort((a, b) => a.name.localeCompare(b.name));
 
   $('#emptyResults').hidden = visible.length > 0;
   grid.innerHTML = '';
@@ -223,6 +227,18 @@ function renderCart() {
 
   const subtotal = cartSubtotal();
   const shipping = shippingFor(subtotal);
+
+  // Free-shipping progress bar
+  const progress = $('#shipProgress');
+  progress.hidden = subtotal === 0;
+  if (subtotal > 0) {
+    const pct = Math.min(100, (subtotal / FREE_SHIPPING_THRESHOLD) * 100);
+    $('#shipBarFill').style.width = pct + '%';
+    $('#shipProgressText').innerHTML = subtotal >= FREE_SHIPPING_THRESHOLD
+      ? '<strong>Free shipping unlocked!</strong>'
+      : `Add <strong>${money(FREE_SHIPPING_THRESHOLD - subtotal)}</strong> more for free shipping`;
+  }
+
   $('#cartSubtotal').textContent = money(subtotal);
   $('#cartShipping').textContent = subtotal === 0 ? '—' : (shipping === 0 ? 'Free' : money(shipping));
   $('#cartTotal').textContent = money(subtotal + shipping);
@@ -379,7 +395,7 @@ function placeOrder() {
     let extra = '';
     if (method === 'ewallet') {
       walletBalance = Math.round((walletBalance - total) * 100) / 100;
-      store.set('saak_wallet', walletBalance);
+      store.set('saak_wallet_php', walletBalance);
       extra = `<div class="sum-row"><span>Wallet balance</span><span>${money(walletBalance)}</span></div>`;
     }
     const label = method === 'ewallet' ? 'E-Wallet (SAAK Pay)' : method === 'card' ? 'Card' : 'Cash on delivery';
@@ -475,6 +491,12 @@ function init() {
   });
   $('#searchInput').addEventListener('input', (e) => {
     searchTerm = e.target.value;
+    renderProducts();
+  });
+
+  // Sort
+  $('#sortSelect').addEventListener('change', (e) => {
+    activeSort = e.target.value;
     renderProducts();
   });
 

@@ -62,12 +62,51 @@ console.log('\n[C] CLI edits appear in the rendered store');
   dom.window.document.dispatchEvent(new dom.window.Event('DOMContentLoaded', { bubbles: true }));
   const names = [...dom.window.document.querySelectorAll('.product-item h3')].map((h) => h.textContent);
   check('added item renders in the grid', names.includes('CLI Test Jacket'));
-  check('price renders correctly', dom.window.document.body.textContent.includes('$99.99'));
+  check('price renders correctly', dom.window.document.body.textContent.includes('₱99.99'));
 
   execFileSync('node', [cli, 'remove', 'CLI Test Jacket'], { cwd: root });
   delete require.cache[require.resolve(path.join(root, 'scripts', 'products.js'))];
   const after = require(path.join(root, 'scripts', 'products.js'));
   check('removed item is gone from catalog', !after.some((p) => p.name === 'CLI Test Jacket'));
+}
+
+console.log('\n[D] Peso pricing, sorting, and free-shipping progress');
+{
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  delete require.cache[require.resolve(path.join(root, 'scripts', 'products.js'))];
+  const js = fs.readFileSync(path.join(root, 'scripts', 'products.js'), 'utf8') + '\n' +
+             fs.readFileSync(path.join(root, 'scripts', 'main.js'), 'utf8');
+  const dom = new JSDOM(html, { runScripts: 'outside-only', url: 'http://localhost/' });
+  dom.window.eval(js);
+  dom.window.document.dispatchEvent(new dom.window.Event('DOMContentLoaded', { bubbles: true }));
+  const d = dom.window.document;
+  const names = () => [...d.querySelectorAll('.product-item h3')].map((h) => h.textContent);
+
+  check('prices display with peso sign and separators', d.body.textContent.includes('\u20b12,499.00'));
+  check('no dollar prices remain on the page', !/\$\d/.test(d.body.textContent));
+  check('ticker announces \u20b12,500 free-shipping threshold', d.body.textContent.includes('Free shipping over \u20b12,500'));
+
+  const sort = d.querySelector('#sortSelect');
+  sort.value = 'price-asc';
+  sort.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
+  check('sort low-to-high puts Canvas Tote (\u20b1999) first', names()[0] === 'Canvas Tote');
+  sort.value = 'price-desc';
+  sort.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
+  check('sort high-to-low puts Field Overshirt (\u20b13,999) first', names()[0] === 'Field Overshirt');
+  sort.value = 'name';
+  sort.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
+  check('sort by name is alphabetical', names()[0] === 'Canvas Tote' && names()[1] === 'Column Dress');
+  sort.value = 'featured';
+  sort.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
+
+  // Progress bar: Everyday Tee \u20b11,299 → needs \u20b11,201 more
+  d.querySelectorAll('.product-item')[1].querySelector('.add-btn').click();
+  check('progress bar visible with items in cart', d.querySelector('#shipProgress').hidden === false);
+  check('progress shows remaining \u20b11,201.00', d.querySelector('#shipProgressText').textContent.includes('\u20b11,201.00'));
+  check('bar width reflects subtotal share', d.querySelector('#shipBarFill').style.width === (1299 / 2500 * 100) + '%');
+  d.querySelectorAll('.product-item')[1].querySelector('.add-btn').click(); // \u20b12,598 ≥ \u20b12,500
+  check('crossing threshold unlocks free shipping message', d.querySelector('#shipProgressText').textContent.includes('unlocked'));
+  check('bar caps at 100%', d.querySelector('#shipBarFill').style.width === '100%');
 }
 
 console.log(`\nRESULT: ${passed} passed, ${failed} failed`);

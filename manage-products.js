@@ -76,7 +76,7 @@ function list(products) {
   const w = Math.max(...products.map((p) => p.name.length));
   products.forEach((p) => {
     console.log(
-      `${p.id.padEnd(4)} ${p.name.padEnd(w + 2)} $${p.price.toFixed(2).padStart(7)}  ` +
+      `${p.id.padEnd(4)} ${p.name.padEnd(w + 2)} ₱${p.price.toLocaleString('en-PH', { minimumFractionDigits: 2 }).padStart(9)}  ` +
       `${p.category.padEnd(12)} ${p.img}${p.badge ? '  [' + p.badge + ']' : ''}`
     );
   });

@@ -8,15 +8,15 @@
    ========================================================= */
 (function () {
 const PRODUCTS = [
-  { "id": "p1", "name": "Studio Knit", "price": 49.00, "category": "tops", "img": "images/product1.jpg", "badge": "Featured" },
-  { "id": "p2", "name": "Everyday Tee", "price": 29.99, "category": "tops", "img": "images/tee.svg" },
-  { "id": "p3", "name": "District Hoodie", "price": 64.00, "category": "tops", "img": "images/hoodie.svg", "badge": "New" },
-  { "id": "p4", "name": "Straight Trousers", "price": 58.50, "category": "bottoms", "img": "images/trousers.svg" },
-  { "id": "p5", "name": "Column Dress", "price": 72.00, "category": "tops", "img": "images/dress.svg" },
-  { "id": "p6", "name": "Field Overshirt", "price": 79.00, "category": "outerwear", "img": "images/overshirt.svg", "badge": "New" },
-  { "id": "p7", "name": "Low-Profile Cap", "price": 24.00, "category": "accessories", "img": "images/cap.svg" },
-  { "id": "p8", "name": "Canvas Tote", "price": 19.50, "category": "accessories", "img": "images/tote.svg" },
-  { "id": "p9", "name": "Wool Scarf", "price": 34.00, "category": "accessories", "img": "images/scarf.svg" }
+  { "id": "p1", "name": "Studio Knit", "price": 2499.00, "category": "tops", "img": "images/product1.jpg", "badge": "Featured" },
+  { "id": "p2", "name": "Everyday Tee", "price": 1299.00, "category": "tops", "img": "images/tee.svg" },
+  { "id": "p3", "name": "District Hoodie", "price": 3199.00, "category": "tops", "img": "images/hoodie.svg", "badge": "New" },
+  { "id": "p4", "name": "Straight Trousers", "price": 2899.00, "category": "bottoms", "img": "images/trousers.svg" },
+  { "id": "p5", "name": "Column Dress", "price": 3599.00, "category": "tops", "img": "images/dress.svg" },
+  { "id": "p6", "name": "Field Overshirt", "price": 3999.00, "category": "outerwear", "img": "images/overshirt.svg", "badge": "New" },
+  { "id": "p7", "name": "Low-Profile Cap", "price": 1199.00, "category": "accessories", "img": "images/cap.svg" },
+  { "id": "p8", "name": "Canvas Tote", "price": 999.00, "category": "accessories", "img": "images/tote.svg" },
+  { "id": "p9", "name": "Wool Scarf", "price": 1699.00, "category": "accessories", "img": "images/scarf.svg" }
 ];
 
 /* Works both in the browser and in Node (for the CLI and tests) */

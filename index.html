@@ -66,12 +66,12 @@
     <!-- Ticker strip -->
     <div class="ticker" aria-hidden="true">
         <div class="ticker-track">
-            <span>Free shipping over $75</span><span>•</span>
-            <span>E-wallet accepted</span><span>•</span>
+            <span>Free shipping over ₱2,500</span><span>•</span>
+            <span>E-wallets &amp; PayPal accepted</span><span>•</span>
             <span>30-day free returns</span><span>•</span>
             <span>New drop every month</span><span>•</span>
-            <span>Free shipping over $75</span><span>•</span>
-            <span>E-wallet accepted</span><span>•</span>
+            <span>Free shipping over ₱2,500</span><span>•</span>
+            <span>E-wallets &amp; PayPal accepted</span><span>•</span>
             <span>30-day free returns</span><span>•</span>
             <span>New drop every month</span><span>•</span>
         </div>
@@ -88,6 +88,12 @@
                 <button class="chip" data-filter="outerwear">Outerwear</button>
                 <button class="chip" data-filter="accessories">Accessories</button>
             </div>
+            <select id="sortSelect" class="sort-select" aria-label="Sort products">
+                <option value="featured">Sort: Featured</option>
+                <option value="price-asc">Price: low to high</option>
+                <option value="price-desc">Price: high to low</option>
+                <option value="name">Name: A to Z</option>
+            </select>
         </div>
         <div class="products" id="productGrid"><!-- rendered by main.js --></div>
         <p class="empty-results" id="emptyResults" hidden>No pieces match that search — try another word or clear the filter.</p>
@@ -100,12 +106,12 @@
             <div class="feature">
                 <i class="fas fa-wallet"></i>
                 <h3>E-wallet checkout</h3>
-                <p>Buy any piece in a couple of taps. We accept SAAK Pay and all major e-wallets — no card required.</p>
+                <p>Buy any piece in a couple of taps. Check out with SAAK Pay, GCash, Maya, or PayPal — no card required.</p>
             </div>
             <div class="feature">
                 <i class="fas fa-truck-fast"></i>
                 <h3>Fast, free shipping</h3>
-                <p>Free standard shipping on orders over $75. Most orders arrive within 3–5 business days.</p>
+                <p>Free standard shipping on orders over ₱2,500. Most orders arrive within 3–5 business days.</p>
             </div>
             <div class="feature">
                 <i class="fas fa-rotate-left"></i>
@@ -183,9 +189,13 @@
         </div>
         <div class="cart-items" id="cartItems"><!-- rendered by main.js --></div>
         <div class="cart-foot" id="cartFoot">
-            <div class="cart-row"><span>Subtotal</span><span class="mono" id="cartSubtotal">$0.00</span></div>
+            <div class="ship-progress" id="shipProgress" hidden>
+                <p id="shipProgressText"></p>
+                <div class="ship-bar"><div class="ship-bar-fill" id="shipBarFill"></div></div>
+            </div>
+            <div class="cart-row"><span>Subtotal</span><span class="mono" id="cartSubtotal">₱0.00</span></div>
             <div class="cart-row muted"><span>Shipping</span><span class="mono" id="cartShipping">—</span></div>
-            <div class="cart-row total"><span>Total</span><span class="mono" id="cartTotal">$0.00</span></div>
+            <div class="cart-row total"><span>Total</span><span class="mono" id="cartTotal">₱0.00</span></div>
             <button class="btn btn-primary btn-block" id="checkoutBtn">Checkout</button>
             <p class="cart-secure"><i class="fas fa-lock"></i> Secure checkout — e-wallet, card, or cash on delivery</p>
         </div>
@@ -219,7 +229,7 @@
                         <i class="fas fa-wallet"></i>
                         <span>
                             <strong>E-Wallet</strong>
-                            <small>SAAK Pay, PayPal, GoPay &amp; more — instant</small>
+                            <small>SAAK Pay, GCash, Maya &amp; more — instant</small>
                         </span>
                         <em class="pay-badge">Fastest</em>
                     </label>
@@ -254,7 +264,7 @@
                 <div class="pay-fields" id="fieldsEwallet">
                     <div class="wallet-box">
                         <div class="wallet-brand"><i class="fas fa-wallet"></i> SAAK Pay <span class="wallet-demo">demo wallet</span></div>
-                        <div class="wallet-balance">Balance <strong class="mono" id="walletBalance">$0.00</strong></div>
+                        <div class="wallet-balance">Balance <strong class="mono" id="walletBalance">₱0.00</strong></div>
                     </div>
                     <input type="text" id="walletId" placeholder="Wallet email or phone number">
                     <input type="password" id="walletPin" placeholder="6-digit wallet PIN" maxlength="6" inputmode="numeric">
@@ -271,7 +281,7 @@
 
                 <!-- COD note -->
                 <div class="pay-fields" id="fieldsCod" hidden>
-                    <p class="cod-note"><i class="fas fa-circle-info"></i> Please prepare the exact amount. A $2.00 handling fee applies to cash on delivery.</p>
+                    <p class="cod-note"><i class="fas fa-circle-info"></i> Please prepare the exact amount. A ₱50.00 handling fee applies to cash on delivery.</p>
                 </div>
 
                 <!-- PayPal buttons -->
