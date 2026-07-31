@@ -125,32 +125,31 @@ setTimeout(() => {
   document.querySelector('#doneBtn').click();
   check('modal closes normally after completion', document.querySelector('#checkoutModal').hidden === true);
 
-  console.log('\n[7] Maya and COD paths');
+  console.log('\n[7] Bank transfer (InstaPay) path');
   const dom2 = new JSDOM(html, { runScripts: 'outside-only', url: 'http://localhost/' });
   dom2.window.eval(js);
   dom2.window.document.dispatchEvent(new dom2.window.Event('DOMContentLoaded', { bubbles: true }));
   const d2 = dom2.window.document;
   d2.querySelectorAll('.product-item')[0].querySelector('.buy-btn').click(); // \u20b12,499 + \u20b1150 ship
   check('buy-now opens checkout directly', d2.querySelector('#checkoutModal').hidden === false);
+  check('only GCash and bank methods offered', d2.querySelectorAll('.pay-method').length === 2);
 
-  d2.querySelector('[data-method="cod"]').click();
-  check('COD adds \u20b150.00 fee to total', d2.querySelector('#checkoutSummary').textContent.includes('\u20b12,699.00'));
-  check('COD button says Place order', d2.querySelector('#payBtn').textContent === 'Place order');
-
-  d2.querySelector('[data-method="maya"]').click();
-  check('Maya fields revealed', d2.querySelector('#fieldsMaya').hidden === false && d2.querySelector('#fieldsGcash').hidden === true);
-  check('Maya total drops COD fee', d2.querySelector('#checkoutSummary').textContent.includes('\u20b12,649.00'));
+  d2.querySelector('[data-method="bank"]').click();
+  check('bank fields revealed', d2.querySelector('#fieldsBank').hidden === false && d2.querySelector('#fieldsGcash').hidden === true);
+  check('configured bank account shown', d2.querySelector('#bankNumber').textContent === '1234 5678 90' && d2.querySelector('#bankName').textContent === 'BPI');
+  check('total has no extra fees', d2.querySelector('#checkoutSummary').textContent.includes('\u20b12,649.00'));
   d2.querySelector('#shipName').value = 'B Cruz'; d2.querySelector('#shipEmail').value = 'b@x.ph';
   d2.querySelector('#shipAddress').value = '7 Rizal Ave'; d2.querySelector('#shipCity').value = 'Cebu'; d2.querySelector('#shipZip').value = '6000';
-  d2.querySelector('#mayaRef').value = 'MY';
+  d2.querySelector('#bankRef').value = 'AB1';
   d2.querySelector('#payBtn').click();
-  check('blocks too-short Maya reference', d2.querySelector('#checkoutError').hidden === false);
-  d2.querySelector('#mayaRef').value = 'MAYA12345678';
+  check('blocks too-short bank reference', d2.querySelector('#checkoutError').hidden === false);
+  d2.querySelector('#bankRef').value = 'INSTA-2026-0001';
   d2.querySelector('#payBtn').click();
 
   setTimeout(() => {
-    check('Maya order succeeds', d2.querySelector('#successStep').hidden === false);
-    check('receipt shows Maya + reference', d2.querySelector('#receipt').textContent.includes('Maya') && d2.querySelector('#receipt').textContent.includes('MAYA12345678'));
+    check('bank order succeeds', d2.querySelector('#successStep').hidden === false);
+    check('receipt shows bank method + reference', d2.querySelector('#receipt').textContent.includes('Bank transfer (InstaPay)') && d2.querySelector('#receipt').textContent.includes('INSTA-2026-0001'));
+    check('verification-first copy', d2.querySelector('#successDetail').textContent.includes('verified'));
     console.log(`\nRESULT: ${passed} passed, ${failed} failed`);
     process.exit(failed ? 1 : 0);
   }, 1800);

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SAAK — Catalog Manager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <style>[hidden]{display:none !important}</style>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;900&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="styles/style.css?v=3">
+    <style>
+        .admin-wrap { max-width: 560px; margin: 0 auto; padding: 28px 18px 60px; }
+        .admin-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+        .admin-head h1 { font-size: 20px; }
+        .admin-card { background: var(--white); border: 1px solid var(--line); border-radius: 8px; padding: 18px; margin-bottom: 16px; }
+        .admin-card h2 { font-size: 13px; font-family: 'IBM Plex Mono', monospace; letter-spacing: 0.14em; color: var(--ash); margin-bottom: 12px; }
+        .admin-card input, .admin-card select {
+            width: 100%; padding: 13px 14px; margin-bottom: 10px;
+            border: 1px solid var(--line); border-radius: var(--radius);
+            font: 400 15px 'Inter', sans-serif; background: var(--paper);
+        }
+        .admin-status { font-size: 13px; padding: 11px 14px; border-radius: var(--radius); margin-bottom: 12px; }
+        .admin-status.ok { background: #E7F3EA; color: #1F6B37; }
+        .admin-status.err { background: #F9E7E5; color: #B4231A; }
+        .admin-item { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); }
+        .admin-item:last-child { border-bottom: none; }
+        .admin-item img { width: 44px; height: 55px; object-fit: cover; border-radius: 4px; background: var(--stone); }
+        .admin-item-info { flex: 1; min-width: 0; }
+        .admin-item-info strong { font-size: 14px; display: block; }
+        .admin-item-info span { font-size: 12px; color: var(--ash); }
+        .admin-remove { background: none; border: 1px solid var(--line); border-radius: var(--radius);
+            color: #B4231A; padding: 8px 12px; font-size: 12px; cursor: pointer; }
+        .admin-remove:disabled { opacity: 0.5; }
+        .admin-note { font-size: 12px; color: var(--ash); line-height: 1.6; }
+        .admin-note code { font-family: 'IBM Plex Mono', monospace; background: var(--stone); padding: 1px 5px; border-radius: 3px; }
+        label.remember { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--ash); margin-bottom: 12px; }
+        label.remember input { width: auto; margin: 0; }
+    </style>
+</head>
+<body>
+<div class="admin-wrap">
+    <div class="admin-head">
+        <h1>SAAK<span class="logo-dot">.</span> Catalog Manager</h1>
+        <button class="icon-btn" id="logoutBtn" hidden aria-label="Log out"><i class="fas fa-right-from-bracket"></i></button>
+    </div>
+
+    <p class="admin-status" id="status" hidden></p>
+
+    <!-- Auth -->
+    <div class="admin-card" id="authView">
+        <h2>CONNECT</h2>
+        <input type="password" id="tokenInput" placeholder="GitHub fine-grained access token" autocomplete="off">
+        <label class="remember"><input type="checkbox" id="rememberToken"> Remember on this device</label>
+        <button class="btn btn-primary btn-block" id="connectBtn">Connect to catalog</button>
+        <p class="admin-note" style="margin-top:12px">
+            Create the token at <code>github.com &rarr; Settings &rarr; Developer settings &rarr; Fine-grained tokens</code>:
+            grant access to <strong>only this repository</strong> with <strong>Contents: Read and write</strong> and nothing else.
+            The token stays on this device and talks directly to GitHub — anyone who has it can edit the store, so treat it like a password.
+        </p>
+    </div>
+
+    <!-- Manager -->
+    <div id="manageView" hidden>
+        <div class="admin-card">
+            <h2>ADD ITEM</h2>
+            <input type="text" id="newName" placeholder="Item name">
+            <input type="number" id="newPrice" placeholder="Price in ₱ (e.g. 1499)" min="1" step="0.01" inputmode="decimal">
+            <select id="newCategory">
+                <option value="tops">Tops</option>
+                <option value="bottoms">Bottoms</option>
+                <option value="outerwear">Outerwear</option>
+                <option value="accessories">Accessories</option>
+            </select>
+            <select id="newImage"></select>
+            <input type="text" id="newBadge" placeholder="Badge (optional, e.g. New)">
+            <button class="btn btn-primary btn-block" id="addBtn">Add to catalog</button>
+        </div>
+
+        <div class="admin-card">
+            <h2>CATALOG (<span id="itemCount">0</span>)</h2>
+            <div id="itemList"></div>
+        </div>
+
+        <p class="admin-note">Each change commits <code>scripts/products.js</code> to the repository; the live site updates when
+        GitHub Pages redeploys, usually within 1–2 minutes. <code>standalone.html</code> is not rebuilt by this page —
+        run <code>npm run build</code> on a computer when you next update it.</p>
+    </div>
+</div>
+<script src="scripts/admin.js"></script>
+</body>
+</html>

@@ -55,30 +55,53 @@ Push the repo, then Settings → Pages → "Deploy from a branch" → `master`,
 subpath. After editing the catalog with `manage-products.js`, commit and
 push — Pages redeploys automatically.
 
-## Payment methods (Philippine market)
-Research-driven lineup: GCash is the dominant PH wallet (~94M users) and
-Maya is second — together they cover ~90% of wallet users — while cash on
-delivery still carries roughly a quarter of e-commerce value, and card
-penetration is low. The checkout therefore offers, in order: **GCash**,
-**Maya**, **Cash on delivery**, and **PayPal**. The old demo wallet and the
-demo card form were removed.
+## Payment methods: GCash + Bank transfer (InstaPay) only
+The checkout accepts exactly two methods, both real and both manually
+verified — the standard pattern for small PH sellers without a gateway:
 
-GCash and Maya use the manual-transfer pattern common among small PH
-sellers: the buyer sends the exact total to your account shown at checkout,
-enters the reference number from their receipt, and you verify it before
-shipping. Set your real details in `scripts/main.js` → CONFIG:
+- **GCash** — buyer sends the exact total to your GCash account (shown at
+  checkout) and enters the 13-digit reference number from their receipt.
+- **Bank transfer (InstaPay)** — buyer transfers from any PH bank or
+  wallet app to your bank account and enters the reference/trace number.
+  InstaPay is real-time, 24/7, capped at ₱50,000 per transaction (BSP
+  rule), and transfers are final and irreversible. The checkout warns
+  buyers if an order exceeds the cap (use PESONet or split transfers).
+
+Set your real accounts in `scripts/main.js` → CONFIG:
 
     storeEmail: 'orders@yourstore.ph',
     gcash: { name: 'Your Name', number: '09XX XXX XXXX' },
-    maya:  { name: 'Your Name', number: '09XX XXX XXXX' },
+    bank:  { bank: 'BPI', name: 'Your Name', number: 'XXXX XXXX XX' },
 
-**How orders reach you:** GitHub Pages has no backend, so after every
-order the customer gets an "Email order to store" button (prefilled with
-items, total, delivery address, and payment reference, addressed to
-`storeEmail`) plus a copy button. Verify GCash/Maya references in your own
-app before shipping. When volume grows, graduate to a PH gateway
-(PayMongo, Xendit, Maya Business) for automatic confirmation — that
-requires the server-side piece described below.
+**Critical verification rule:** reference numbers and receipt screenshots
+can be faked. Never ship until the money is visible in your own GCash app
+or bank account. The reference is for matching the incoming transfer to
+the order — not proof of payment by itself.
+
+Maya, cash on delivery, and PayPal were removed at the store owner's
+request; git history has the PayPal integration if it's ever wanted back.
+For automatic (non-manual) confirmation, a PH gateway (PayMongo, Xendit,
+Maya Business) with a server-side component is the upgrade path.
+
+## Manage the catalog from a smartphone
+`admin.html` is a mobile catalog manager that works even though the site
+is on GitHub Pages: it edits `scripts/products.js` directly in the GitHub
+repository via the GitHub API, and Pages redeploys the store automatically
+(~1–2 minutes per change). Setup for the trusted user:
+
+1. On github.com: Settings → Developer settings → Personal access tokens →
+   **Fine-grained tokens** → Generate. Repository access: **only this
+   repository**. Permissions: **Contents → Read and write**. Nothing else.
+2. Open `https://<your-pages-url>/admin.html` on the phone, paste the
+   token, and connect. Add/remove items from the forms; every change is a
+   commit, so the git log doubles as an audit trail.
+
+Security notes, honestly: `admin.html` is public but useless without a
+token — all authorization is GitHub's. The token is held in the browser
+(only saved to the device if "Remember" is ticked) and is sent only to
+`api.github.com`. Anyone holding it can edit this repository, so share it
+like a password and revoke it on GitHub if the phone is lost. The desktop
+CLI (`manage-products.js`) still works and stays format-compatible.
 
 ## Where orders are stored / getting an order list
 The site itself stores nothing (static hosting, no database). Orders exist
@@ -152,6 +175,7 @@ real wallet PINs or card numbers in front-end code.
     npm test             # runs all three suites (~100 checks)
     npm run build        # rebuilds standalone.html
 
-    node test/smoke.test.js             # cart, filters, checkout, GCash/Maya/COD flows, order log
-    node test/visibility-paypal.test.js # nothing hidden renders on load; full PayPal path
-    node test/catalog.test.js           # standalone build, CLI, peso pricing, sort, progress
+    node test/smoke.test.js       # cart, filters, checkout, GCash + bank flows, order log
+    node test/visibility.test.js  # nothing hidden renders on load; only 2 methods offered
+    node test/catalog.test.js     # standalone build, CLI, peso pricing, sort, progress
+    node test/admin.test.js       # smartphone catalog manager against a stubbed GitHub API

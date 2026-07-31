@@ -4,7 +4,7 @@
   "private": true,
   "description": "SAAK online clothing store — static storefront with GCash/Maya/COD/PayPal checkout (PHP currency)",
   "scripts": {
-    "test": "node test/smoke.test.js && node test/visibility-paypal.test.js && node test/catalog.test.js",
+    "test": "node test/smoke.test.js && node test/visibility.test.js && node test/catalog.test.js && node test/admin.test.js",
     "build": "node tools/build-standalone.js"
   },
   "devDependencies": {

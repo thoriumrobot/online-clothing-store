@@ -5,10 +5,10 @@
     <title>SAAK — Contemporary Clothing</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='14' fill='%2314140F'/%3E%3Ctext x='50' y='70' font-size='58' font-family='Arial,sans-serif' font-weight='bold' text-anchor='middle' fill='%23F6F4EE'%3ES%3C/text%3E%3C/svg%3E">
     <meta property="og:title" content="SAAK — Contemporary Clothing">
-    <meta property="og:description" content="Trendy, affordable clothing in Philippine Pesos. Pay with GCash, Maya, PayPal, or cash on delivery.">
+    <meta property="og:description" content="Trendy, affordable clothing in Philippine Pesos. Pay with GCash or InstaPay bank transfer.">
     <meta property="og:type" content="website">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="SAAK — trendy, affordable clothing. Shop tees, hoodies, trousers and more. Pay with e-wallet, card, or cash on delivery.">
+    <meta name="description" content="SAAK — trendy, affordable clothing in Philippine Pesos. Pay with GCash or InstaPay bank transfer.">
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -71,11 +71,11 @@
     <div class="ticker" aria-hidden="true">
         <div class="ticker-track">
             <span>Free shipping over ₱2,500</span><span>•</span>
-            <span>E-wallets &amp; PayPal accepted</span><span>•</span>
+            <span>GCash &amp; bank transfer accepted</span><span>•</span>
             <span>30-day free returns</span><span>•</span>
             <span>New drop every month</span><span>•</span>
             <span>Free shipping over ₱2,500</span><span>•</span>
-            <span>E-wallets &amp; PayPal accepted</span><span>•</span>
+            <span>GCash &amp; bank transfer accepted</span><span>•</span>
             <span>30-day free returns</span><span>•</span>
             <span>New drop every month</span><span>•</span>
         </div>
@@ -110,7 +110,7 @@
             <div class="feature">
                 <i class="fas fa-wallet"></i>
                 <h3>E-wallet checkout</h3>
-                <p>Buy any piece in a couple of taps. Check out with GCash, Maya, PayPal, or cash on delivery — no card required.</p>
+                <p>Buy any piece in a couple of taps. Check out with GCash or an InstaPay bank transfer from any PH bank app — no card required.</p>
             </div>
             <div class="feature">
                 <i class="fas fa-truck-fast"></i>
@@ -173,11 +173,9 @@
             <div>
                 <h4>We accept</h4>
                 <div class="pay-icons">
-                    <i class="fas fa-wallet" title="E-wallet"></i>
-                    <i class="fab fa-cc-paypal" title="PayPal"></i>
-                    <i class="fab fa-google-pay" title="Google Pay"></i>
-                    <i class="fab fa-apple-pay" title="Apple Pay"></i>
-                    <i class="fas fa-credit-card" title="Card"></i>
+                    <i class="fas fa-mobile-screen-button" title="GCash"></i>
+                    <i class="fas fa-building-columns" title="Bank transfer"></i>
+                    <i class="fas fa-money-bill-transfer" title="InstaPay"></i>
                 </div>
             </div>
         </div>
@@ -201,7 +199,7 @@
             <div class="cart-row muted"><span>Shipping</span><span class="mono" id="cartShipping">—</span></div>
             <div class="cart-row total"><span>Total</span><span class="mono" id="cartTotal">₱0.00</span></div>
             <button class="btn btn-primary btn-block" id="checkoutBtn">Checkout</button>
-            <p class="cart-secure"><i class="fas fa-lock"></i> Checkout with GCash, Maya, PayPal, or cash on delivery</p>
+            <p class="cart-secure"><i class="fas fa-lock"></i> Checkout with GCash or bank transfer (InstaPay)</p>
         </div>
     </aside>
 
@@ -248,30 +246,13 @@
                         </span>
                         <em class="pay-badge">Most used</em>
                     </label>
-                    <label class="pay-method" data-method="maya">
-                        <input type="radio" name="payMethod" value="maya">
-                        <i class="fas fa-mobile-screen-button"></i>
+                    <label class="pay-method" data-method="bank">
+                        <input type="radio" name="payMethod" value="bank">
+                        <i class="fas fa-building-columns"></i>
                         <span>
-                            <strong>Maya</strong>
-                            <small>Send via the Maya app, then enter your reference no.</small>
+                            <strong>Bank transfer</strong>
+                            <small>InstaPay from any PH bank app — instant, 24/7</small>
                         </span>
-                    </label>
-                    <label class="pay-method" data-method="cod">
-                        <input type="radio" name="payMethod" value="cod">
-                        <i class="fas fa-hand-holding-dollar"></i>
-                        <span>
-                            <strong>Cash on delivery</strong>
-                            <small>Pay the courier when it arrives</small>
-                        </span>
-                    </label>
-                    <label class="pay-method" data-method="paypal">
-                        <input type="radio" name="payMethod" value="paypal">
-                        <i class="fab fa-paypal"></i>
-                        <span>
-                            <strong>PayPal</strong>
-                            <small>PayPal balance or linked cards — real gateway</small>
-                        </span>
-                        <em class="pay-badge">Live</em>
                     </label>
                 </div>
 
@@ -281,30 +262,18 @@
                         <div class="wallet-brand"><i class="fas fa-mobile-screen-button"></i> GCash <span class="wallet-demo">manual transfer</span></div>
                         <div class="wallet-balance">Send to <strong class="mono" id="gcashNumber"></strong></div>
                     </div>
-                    <p class="cod-note"><i class="fas fa-circle-info"></i> Send the exact total to the GCash account above (account name: <span id="gcashName"></span>), then enter the 13-digit reference number from your GCash receipt. We verify every reference before shipping.</p>
+                    <p class="info-note"><i class="fas fa-circle-info"></i> Send the exact total to the GCash account above (account name: <span id="gcashName"></span>), then enter the 13-digit reference number from your GCash receipt. We verify the transfer in our app before shipping.</p>
                     <input type="text" id="gcashRef" placeholder="GCash reference number (13 digits)" inputmode="numeric" maxlength="13">
                 </div>
 
-                <!-- Maya manual transfer -->
-                <div class="pay-fields" id="fieldsMaya" hidden>
+                <!-- Bank transfer (InstaPay) -->
+                <div class="pay-fields" id="fieldsBank" hidden>
                     <div class="wallet-box">
-                        <div class="wallet-brand"><i class="fas fa-mobile-screen-button"></i> Maya <span class="wallet-demo">manual transfer</span></div>
-                        <div class="wallet-balance">Send to <strong class="mono" id="mayaNumber"></strong></div>
+                        <div class="wallet-brand"><i class="fas fa-building-columns"></i> <span id="bankName"></span> <span class="wallet-demo">InstaPay</span></div>
+                        <div class="wallet-balance">Account <strong class="mono" id="bankNumber"></strong></div>
                     </div>
-                    <p class="cod-note"><i class="fas fa-circle-info"></i> Send the exact total to the Maya account above (account name: <span id="mayaName"></span>), then enter the reference number from your Maya receipt. We verify every reference before shipping.</p>
-                    <input type="text" id="mayaRef" placeholder="Maya reference number" maxlength="20">
-                </div>
-
-                <!-- COD note -->
-                <div class="pay-fields" id="fieldsCod" hidden>
-                    <p class="cod-note"><i class="fas fa-circle-info"></i> Please prepare the exact amount. A ₱50.00 handling fee applies to cash on delivery.</p>
-                </div>
-
-                <!-- PayPal buttons -->
-                <div class="pay-fields" id="fieldsPaypal" hidden>
-                    <p class="cod-note"><i class="fas fa-circle-info"></i> Fill in your delivery details, then approve the payment in PayPal's secure window. Runs against PayPal's sandbox until you set your live client ID (see README).</p>
-                    <p class="muted" id="paypalStatus"></p>
-                    <div id="paypalButtons"></div>
+                    <p class="info-note"><i class="fas fa-circle-info"></i> Send the exact total via InstaPay to the account above (account name: <span id="bankAccountName"></span>) from any PH bank or wallet app, then enter the reference / trace number from your transfer receipt. InstaPay is capped at ₱50,000 per transaction; transfers are instant and cannot be reversed, and we verify receipt before shipping.</p>
+                    <input type="text" id="bankRef" placeholder="Transfer reference / trace number" maxlength="25">
                 </div>
 
                 <p class="form-error" id="checkoutError" hidden></p>

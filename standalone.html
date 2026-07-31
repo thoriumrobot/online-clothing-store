@@ -5,10 +5,10 @@
     <title>SAAK — Contemporary Clothing (standalone)</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='14' fill='%2314140F'/%3E%3Ctext x='50' y='70' font-size='58' font-family='Arial,sans-serif' font-weight='bold' text-anchor='middle' fill='%23F6F4EE'%3ES%3C/text%3E%3C/svg%3E">
     <meta property="og:title" content="SAAK — Contemporary Clothing">
-    <meta property="og:description" content="Trendy, affordable clothing in Philippine Pesos. Pay with GCash, Maya, PayPal, or cash on delivery.">
+    <meta property="og:description" content="Trendy, affordable clothing in Philippine Pesos. Pay with GCash or InstaPay bank transfer.">
     <meta property="og:type" content="website">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="SAAK — trendy, affordable clothing. Shop tees, hoodies, trousers and more. Pay with e-wallet, card, or cash on delivery.">
+    <meta name="description" content="SAAK — trendy, affordable clothing in Philippine Pesos. Pay with GCash or InstaPay bank transfer.">
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -597,14 +597,14 @@ footer { background: var(--ink); color: var(--paper); padding: 56px 5vw 28px; }
 .wallet-balance { font-size: 12px; color: #B9B5A8; }
 .wallet-balance strong { color: var(--paper); margin-left: 6px; font-size: 14px; }
 
-.cod-note {
+.info-note {
   font-size: 13px;
   color: var(--ash);
   background: var(--stone);
   border-radius: var(--radius);
   padding: 12px 14px;
 }
-.cod-note i { margin-right: 6px; }
+.info-note i { margin-right: 6px; }
 
 .form-error {
   color: #B4231A;
@@ -799,11 +799,11 @@ footer { background: var(--ink); color: var(--paper); padding: 56px 5vw 28px; }
     <div class="ticker" aria-hidden="true">
         <div class="ticker-track">
             <span>Free shipping over ₱2,500</span><span>•</span>
-            <span>E-wallets &amp; PayPal accepted</span><span>•</span>
+            <span>GCash &amp; bank transfer accepted</span><span>•</span>
             <span>30-day free returns</span><span>•</span>
             <span>New drop every month</span><span>•</span>
             <span>Free shipping over ₱2,500</span><span>•</span>
-            <span>E-wallets &amp; PayPal accepted</span><span>•</span>
+            <span>GCash &amp; bank transfer accepted</span><span>•</span>
             <span>30-day free returns</span><span>•</span>
             <span>New drop every month</span><span>•</span>
         </div>
@@ -838,7 +838,7 @@ footer { background: var(--ink); color: var(--paper); padding: 56px 5vw 28px; }
             <div class="feature">
                 <i class="fas fa-wallet"></i>
                 <h3>E-wallet checkout</h3>
-                <p>Buy any piece in a couple of taps. Check out with GCash, Maya, PayPal, or cash on delivery — no card required.</p>
+                <p>Buy any piece in a couple of taps. Check out with GCash or an InstaPay bank transfer from any PH bank app — no card required.</p>
             </div>
             <div class="feature">
                 <i class="fas fa-truck-fast"></i>
@@ -901,11 +901,9 @@ footer { background: var(--ink); color: var(--paper); padding: 56px 5vw 28px; }
             <div>
                 <h4>We accept</h4>
                 <div class="pay-icons">
-                    <i class="fas fa-wallet" title="E-wallet"></i>
-                    <i class="fab fa-cc-paypal" title="PayPal"></i>
-                    <i class="fab fa-google-pay" title="Google Pay"></i>
-                    <i class="fab fa-apple-pay" title="Apple Pay"></i>
-                    <i class="fas fa-credit-card" title="Card"></i>
+                    <i class="fas fa-mobile-screen-button" title="GCash"></i>
+                    <i class="fas fa-building-columns" title="Bank transfer"></i>
+                    <i class="fas fa-money-bill-transfer" title="InstaPay"></i>
                 </div>
             </div>
         </div>
@@ -929,7 +927,7 @@ footer { background: var(--ink); color: var(--paper); padding: 56px 5vw 28px; }
             <div class="cart-row muted"><span>Shipping</span><span class="mono" id="cartShipping">—</span></div>
             <div class="cart-row total"><span>Total</span><span class="mono" id="cartTotal">₱0.00</span></div>
             <button class="btn btn-primary btn-block" id="checkoutBtn">Checkout</button>
-            <p class="cart-secure"><i class="fas fa-lock"></i> Checkout with GCash, Maya, PayPal, or cash on delivery</p>
+            <p class="cart-secure"><i class="fas fa-lock"></i> Checkout with GCash or bank transfer (InstaPay)</p>
         </div>
     </aside>
 
@@ -976,30 +974,13 @@ footer { background: var(--ink); color: var(--paper); padding: 56px 5vw 28px; }
                         </span>
                         <em class="pay-badge">Most used</em>
                     </label>
-                    <label class="pay-method" data-method="maya">
-                        <input type="radio" name="payMethod" value="maya">
-                        <i class="fas fa-mobile-screen-button"></i>
+                    <label class="pay-method" data-method="bank">
+                        <input type="radio" name="payMethod" value="bank">
+                        <i class="fas fa-building-columns"></i>
                         <span>
-                            <strong>Maya</strong>
-                            <small>Send via the Maya app, then enter your reference no.</small>
+                            <strong>Bank transfer</strong>
+                            <small>InstaPay from any PH bank app — instant, 24/7</small>
                         </span>
-                    </label>
-                    <label class="pay-method" data-method="cod">
-                        <input type="radio" name="payMethod" value="cod">
-                        <i class="fas fa-hand-holding-dollar"></i>
-                        <span>
-                            <strong>Cash on delivery</strong>
-                            <small>Pay the courier when it arrives</small>
-                        </span>
-                    </label>
-                    <label class="pay-method" data-method="paypal">
-                        <input type="radio" name="payMethod" value="paypal">
-                        <i class="fab fa-paypal"></i>
-                        <span>
-                            <strong>PayPal</strong>
-                            <small>PayPal balance or linked cards — real gateway</small>
-                        </span>
-                        <em class="pay-badge">Live</em>
                     </label>
                 </div>
 
@@ -1009,30 +990,18 @@ footer { background: var(--ink); color: var(--paper); padding: 56px 5vw 28px; }
                         <div class="wallet-brand"><i class="fas fa-mobile-screen-button"></i> GCash <span class="wallet-demo">manual transfer</span></div>
                         <div class="wallet-balance">Send to <strong class="mono" id="gcashNumber"></strong></div>
                     </div>
-                    <p class="cod-note"><i class="fas fa-circle-info"></i> Send the exact total to the GCash account above (account name: <span id="gcashName"></span>), then enter the 13-digit reference number from your GCash receipt. We verify every reference before shipping.</p>
+                    <p class="info-note"><i class="fas fa-circle-info"></i> Send the exact total to the GCash account above (account name: <span id="gcashName"></span>), then enter the 13-digit reference number from your GCash receipt. We verify the transfer in our app before shipping.</p>
                     <input type="text" id="gcashRef" placeholder="GCash reference number (13 digits)" inputmode="numeric" maxlength="13">
                 </div>
 
-                <!-- Maya manual transfer -->
-                <div class="pay-fields" id="fieldsMaya" hidden>
+                <!-- Bank transfer (InstaPay) -->
+                <div class="pay-fields" id="fieldsBank" hidden>
                     <div class="wallet-box">
-                        <div class="wallet-brand"><i class="fas fa-mobile-screen-button"></i> Maya <span class="wallet-demo">manual transfer</span></div>
-                        <div class="wallet-balance">Send to <strong class="mono" id="mayaNumber"></strong></div>
+                        <div class="wallet-brand"><i class="fas fa-building-columns"></i> <span id="bankName"></span> <span class="wallet-demo">InstaPay</span></div>
+                        <div class="wallet-balance">Account <strong class="mono" id="bankNumber"></strong></div>
                     </div>
-                    <p class="cod-note"><i class="fas fa-circle-info"></i> Send the exact total to the Maya account above (account name: <span id="mayaName"></span>), then enter the reference number from your Maya receipt. We verify every reference before shipping.</p>
-                    <input type="text" id="mayaRef" placeholder="Maya reference number" maxlength="20">
-                </div>
-
-                <!-- COD note -->
-                <div class="pay-fields" id="fieldsCod" hidden>
-                    <p class="cod-note"><i class="fas fa-circle-info"></i> Please prepare the exact amount. A ₱50.00 handling fee applies to cash on delivery.</p>
-                </div>
-
-                <!-- PayPal buttons -->
-                <div class="pay-fields" id="fieldsPaypal" hidden>
-                    <p class="cod-note"><i class="fas fa-circle-info"></i> Fill in your delivery details, then approve the payment in PayPal's secure window. Runs against PayPal's sandbox until you set your live client ID (see README).</p>
-                    <p class="muted" id="paypalStatus"></p>
-                    <div id="paypalButtons"></div>
+                    <p class="info-note"><i class="fas fa-circle-info"></i> Send the exact total via InstaPay to the account above (account name: <span id="bankAccountName"></span>) from any PH bank or wallet app, then enter the reference / trace number from your transfer receipt. InstaPay is capped at ₱50,000 per transaction; transfers are instant and cannot be reversed, and we verify receipt before shipping.</p>
+                    <input type="text" id="bankRef" placeholder="Transfer reference / trace number" maxlength="25">
                 </div>
 
                 <p class="form-error" id="checkoutError" hidden></p>
@@ -1101,10 +1070,10 @@ if (typeof window !== 'undefined') window.SAAK_PRODUCTS = PRODUCTS;
    ========================================================= */
 
 // ---------- Payment configuration ----------
-// PayPal runs fully client-side, so it works on static hosts like GitHub
-// Pages. 'sb' uses PayPal's sandbox (test money). To go live: create a
-// Business app at https://developer.paypal.com and paste its LIVE client
-// ID here, then rebuild standalone.html. See README → "Real payments".
+// Two accepted methods, both manual-verification: GCash and bank
+// transfer via InstaPay. Set your real account details below, then run
+// `node tools/build-standalone.js`. You verify each transfer in your own
+// app/bank before shipping — never trust a reference number alone.
 const CONFIG = {
   // Orders are emailed here (GitHub Pages has no backend to record them).
   storeEmail: 'orders@saak-store.example',        // ← change to your email
@@ -1114,10 +1083,7 @@ const CONFIG = {
   orderLogUrl: '',
   // Manual-transfer accounts shown at checkout — change to your real ones.
   gcash: { name: 'SAAK Store', number: '0917 000 0000' },
-  maya:  { name: 'SAAK Store', number: '0918 000 0000' },
-  paypalClientId: 'sb',
-  currency: 'PHP',            // Philippine Peso — supported by PayPal
-  paypalSdkTimeoutMs: 12000,
+  bank:  { bank: 'BPI', name: 'SAAK Store', number: '1234 5678 90' },
 };
 // Exposed for console tweaks and tests
 if (typeof window !== 'undefined') window.SAAK_CONFIG = CONFIG;
@@ -1131,7 +1097,6 @@ const SIZED_CATEGORIES = ['tops', 'bottoms', 'outerwear'];
 const SIZES = ['XS', 'S', 'M', 'L', 'XL'];
 const FREE_SHIPPING_THRESHOLD = 2500;   // ₱
 const SHIPPING_FLAT = 150;              // ₱ standard courier rate
-const COD_FEE = 50;                     // ₱ cash-handling fee
 
 // ---------- Safe storage (falls back to memory if unavailable) ----------
 const store = (() => {
@@ -1370,7 +1335,7 @@ let selectedMethod = 'gcash';
 
 function orderTotal() {
   const subtotal = cartSubtotal();
-  return subtotal + shippingFor(subtotal) + (selectedMethod === 'cod' ? COD_FEE : 0);
+  return subtotal + shippingFor(subtotal);
 }
 
 function renderCheckoutSummary() {
@@ -1380,25 +1345,16 @@ function renderCheckoutSummary() {
     const p = findProduct(l.id);
     return `<div class="sum-row"><span>${l.qty} × ${p.name}${l.size ? ' (' + l.size + ')' : ''}</span><span class="mono">${money(p.price * l.qty)}</span></div>`;
   }).join('');
-  const codRow = selectedMethod === 'cod'
-    ? `<div class="sum-row muted"><span>Cash handling fee</span><span class="mono">${money(COD_FEE)}</span></div>` : '';
   $('#checkoutSummary').innerHTML = `
     ${lines}
     <div class="sum-row muted"><span>Shipping</span><span class="mono">${shipping === 0 ? 'Free' : money(shipping)}</span></div>
-    ${codRow}
     <div class="sum-row total"><span>Total due</span><span class="mono">${money(orderTotal())}</span></div>`;
-  // PayPal replaces our pay button with its own
-  $('#payBtn').hidden = selectedMethod === 'paypal';
-  $('#payBtn').textContent = selectedMethod === 'cod'
-    ? 'Place order'
-    : `I've sent ${money(orderTotal())} — place order`;
-  const footnotes = {
-    gcash: '<i class="fas fa-lock"></i> Manual transfer — we verify your payment reference before shipping.',
-    maya: '<i class="fas fa-lock"></i> Manual transfer — we verify your payment reference before shipping.',
-    cod: '<i class="fas fa-lock"></i> Pay cash to the courier when your order arrives.',
-    paypal: '<i class="fas fa-lock"></i> PayPal handles your payment details — this site never sees them.',
-  };
-  $('#checkoutFootnote').innerHTML = footnotes[selectedMethod];
+  $('#payBtn').textContent = `I've sent ${money(orderTotal())} — place order`;
+  const capWarning = selectedMethod === 'bank' && orderTotal() > 50000
+    ? ' This order exceeds InstaPay\'s ₱50,000 per-transaction cap — send via PESONet or split into multiple transfers.'
+    : '';
+  $('#checkoutFootnote').innerHTML =
+    '<i class="fas fa-lock"></i> Manual transfer — we verify the money arrived in our account before shipping.' + capWarning;
 }
 
 function openCheckout() {
@@ -1410,7 +1366,6 @@ function openCheckout() {
   document.body.classList.add('no-scroll');
   showStep('checkoutStep');
   renderCheckoutSummary();
-  if (selectedMethod === 'paypal') renderPayPalButtons();
 }
 
 function closeCheckout() {
@@ -1446,14 +1401,11 @@ function validateCheckout() {
   if (!name || !address || !city || !zip) return 'Please fill in all delivery details.';
   if (!validEmail(email)) return 'Please enter a valid email for your receipt.';
 
-  // PayPal collects and validates payment details in its own window.
-  if (selectedMethod === 'paypal') return null;
-
   if (selectedMethod === 'gcash' && !/^\d{13}$/.test($('#gcashRef').value.trim())) {
     return 'Enter the 13-digit reference number from your GCash receipt.';
   }
-  if (selectedMethod === 'maya' && !/^[A-Za-z0-9]{6,20}$/.test($('#mayaRef').value.trim())) {
-    return 'Enter the reference number from your Maya receipt (6–20 characters).';
+  if (selectedMethod === 'bank' && !/^[A-Za-z0-9-]{6,25}$/.test($('#bankRef').value.replace(/\s/g, ''))) {
+    return 'Enter the reference / trace number from your bank transfer receipt (6–25 characters).';
   }
 
   return null; // valid
@@ -1483,10 +1435,9 @@ function buildOrderText(orderId, methodLabel, total, reference) {
 }
 
 /* Shared success path for every payment method. `extraRows` lets a
-   method add its own receipt lines (payment reference, PayPal txn). */
+   method add its own receipt lines (e.g. the payment reference). */
 function finalizeOrder(methodLabel, total, extraRows = '', isCod = false, reference = '') {
   const orderId = 'SAAK-' + Date.now().toString(36).toUpperCase();
-  const isPayPal = methodLabel === 'PayPal';
 
   // Build the order message BEFORE the cart is cleared
   lastOrderText = buildOrderText(orderId, methodLabel, total, reference);
@@ -1520,14 +1471,8 @@ function finalizeOrder(methodLabel, total, extraRows = '', isCod = false, refere
     '&body=' + encodeURIComponent(lastOrderText);
 
   $('#successDetail').textContent =
-    isPayPal
-      ? `${money(total)} paid via PayPal. PayPal will email the receipt to your PayPal account.`
-      : isCod
-        ? `Order placed — prepare ${money(total)} in cash for the courier.`
-        : `Order recorded with your ${methodLabel} reference. We ship as soon as the transfer is verified.`;
-  $('#sendOrderText').textContent = isPayPal
-    ? 'Optional: email us your order details for faster processing.'
-    : 'Last step: email us your order so we can process it.';
+    `Order recorded with your ${methodLabel} reference. We ship as soon as the transfer is verified in our account.`;
+  $('#sendOrderText').textContent = 'Last step: email us your order so we can process it.';
   $('#receipt').innerHTML = `
     <div class="sum-row"><span>Order</span><span>${orderId}</span></div>
     <div class="sum-row"><span>Method</span><span>${methodLabel}</span></div>
@@ -1538,7 +1483,7 @@ function finalizeOrder(methodLabel, total, extraRows = '', isCod = false, refere
   saveCart();
   renderCart();
   $('#gcashRef').value = '';
-  $('#mayaRef').value = '';
+  $('#bankRef').value = '';
   showStep('successStep');
 }
 
@@ -1553,80 +1498,13 @@ function placeOrder() {
   $('#processingText').textContent = 'Recording your order…';
 
   setTimeout(() => {
-    const reference = method === 'gcash' ? $('#gcashRef').value.trim()
-      : method === 'maya' ? $('#mayaRef').value.trim() : '';
-    const label = method === 'gcash' ? 'GCash (manual transfer)'
-      : method === 'maya' ? 'Maya (manual transfer)' : 'Cash on delivery';
-    const extra = reference
-      ? `<div class="sum-row"><span>Payment ref</span><span>${reference}</span></div>` : '';
-    finalizeOrder(label, total, extra, method === 'cod', reference);
+    const reference = method === 'gcash'
+      ? $('#gcashRef').value.trim()
+      : $('#bankRef').value.replace(/\s/g, '');
+    const label = method === 'gcash' ? 'GCash (manual transfer)' : 'Bank transfer (InstaPay)';
+    const extra = `<div class="sum-row"><span>Payment ref</span><span>${reference}</span></div>`;
+    finalizeOrder(label, total, extra, false, reference);
   }, 1200);
-}
-
-// ---------- PayPal (real third-party gateway) ----------
-let paypalSdkPromise = null;
-
-function loadPayPalSdk() {
-  if (window.paypal) return Promise.resolve();
-  if (paypalSdkPromise) return paypalSdkPromise;
-  paypalSdkPromise = new Promise((resolve, reject) => {
-    const fail = (why) => { paypalSdkPromise = null; clearTimeout(timer); reject(new Error(why)); };
-    const timer = setTimeout(() => fail('PayPal SDK timed out'), CONFIG.paypalSdkTimeoutMs);
-    const s = document.createElement('script');
-    s.src = 'https://www.paypal.com/sdk/js?client-id=' +
-      encodeURIComponent(CONFIG.paypalClientId) + '&currency=' + CONFIG.currency;
-    s.onload = () => { clearTimeout(timer); resolve(); };
-    s.onerror = () => fail('PayPal SDK failed to load');
-    document.head.appendChild(s);
-  });
-  return paypalSdkPromise;
-}
-
-function renderPayPalButtons() {
-  const box = $('#paypalButtons');
-  const status = $('#paypalStatus');
-  box.innerHTML = '';
-  status.textContent = 'Loading PayPal…';
-
-  loadPayPalSdk().then(() => {
-    status.textContent = '';
-    window.paypal.Buttons({
-      // Gate PayPal's popup behind our delivery-details validation
-      onClick: (data, actions) => {
-        const error = validateCheckout();
-        if (error) { showError(error); return actions.reject(); }
-        $('#checkoutError').hidden = true;
-        return actions.resolve();
-      },
-      createOrder: (data, actions) => actions.order.create({
-        // Ship to the address typed in our form, not the buyer's
-        // PayPal-stored address.
-        application_context: { shipping_preference: 'SET_PROVIDED_ADDRESS' },
-        purchase_units: [{
-          description: 'SAAK clothing order',
-          amount: { value: orderTotal().toFixed(2), currency_code: CONFIG.currency },
-          shipping: {
-            name: { full_name: $('#shipName').value.trim() },
-            address: {
-              address_line_1: $('#shipAddress').value.trim(),
-              admin_area_2: $('#shipCity').value.trim(),
-              postal_code: $('#shipZip').value.trim(),
-              country_code: $('#shipCountry').value,
-            },
-          },
-        }],
-      }),
-      onApprove: (data, actions) => actions.order.capture().then((details) => {
-        const txn = details && details.id ? details.id : data.orderID;
-        finalizeOrder('PayPal', orderTotal(),
-          `<div class="sum-row"><span>PayPal txn</span><span>${txn}</span></div>`, false, txn);
-      }),
-      onError: () => showError('PayPal could not complete the payment. Try again or choose another method.'),
-    }).render(box);
-  }).catch(() => {
-    status.textContent = '';
-    showError("PayPal didn't load — check your connection, or set your client ID in scripts/main.js (see README).");
-  });
 }
 
 // ---------- Wiring ----------
@@ -1704,10 +1582,7 @@ function init() {
       label.querySelector('input').checked = true;
       selectedMethod = label.dataset.method;
       $('#fieldsGcash').hidden = selectedMethod !== 'gcash';
-      $('#fieldsMaya').hidden = selectedMethod !== 'maya';
-      $('#fieldsCod').hidden = selectedMethod !== 'cod';
-      $('#fieldsPaypal').hidden = selectedMethod !== 'paypal';
-      if (selectedMethod === 'paypal') renderPayPalButtons();
+      $('#fieldsBank').hidden = selectedMethod !== 'bank';
       renderCheckoutSummary();
     });
   });
@@ -1715,8 +1590,9 @@ function init() {
   // Show the configured transfer accounts
   $('#gcashNumber').textContent = CONFIG.gcash.number;
   $('#gcashName').textContent = CONFIG.gcash.name;
-  $('#mayaNumber').textContent = CONFIG.maya.number;
-  $('#mayaName').textContent = CONFIG.maya.name;
+  $('#bankName').textContent = CONFIG.bank.bank;
+  $('#bankNumber').textContent = CONFIG.bank.number;
+  $('#bankAccountName').textContent = CONFIG.bank.name;
 
   // GCash references are digits only
   $('#gcashRef').addEventListener('input', (e) => {
