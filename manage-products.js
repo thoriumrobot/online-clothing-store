@@ -105,7 +105,7 @@ function add(products, args) {
   if (badge) item.badge = badge;
   products.push(item);
   save(products);
-  console.log(`Added ${item.id}: ${item.name} — $${price.toFixed(2)} (${category})`);
+  console.log(`Added ${item.id}: ${item.name} — ₱${price.toLocaleString('en-PH', { minimumFractionDigits: 2 })} (${category})`);
 }
 
 function remove(products, args) {

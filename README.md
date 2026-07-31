@@ -80,6 +80,39 @@ app before shipping. When volume grows, graduate to a PH gateway
 (PayMongo, Xendit, Maya Business) for automatic confirmation — that
 requires the server-side piece described below.
 
+## Where orders are stored / getting an order list
+The site itself stores nothing (static hosting, no database). Orders exist
+in three places:
+
+1. **Your inbox** — every order email arrives with the subject
+   `Order SAAK-XXXX`, so searching your mail for `Order SAAK-` lists all
+   orders. This is the primary record for GCash/Maya/COD orders.
+2. **Your PayPal dashboard** — PayPal orders appear under Activity with
+   amount, buyer, and the shipped-to address; PayPal can export CSV.
+3. **Optional order log (recommended)** — set `CONFIG.orderLogUrl` and the
+   site also POSTs each order as JSON (id, date, method, reference, items,
+   total, address, email). Point it at a Google Apps Script to collect
+   every order in a spreadsheet — that spreadsheet is your order list:
+
+   In Google Sheets: Extensions → Apps Script, paste, then
+   Deploy → Web app → access: "Anyone", and put the web-app URL in
+   `orderLogUrl` (rebuild standalone after):
+
+       function doPost(e) {
+         const o = JSON.parse(e.postData.contents);
+         SpreadsheetApp.getActiveSheet().appendRow([
+           o.orderId, o.date, o.method, o.reference, o.total,
+           o.items.map(i => i.qty + 'x ' + i.name + (i.size ? ' (' + i.size + ')' : '')).join('; '),
+           o.name, o.address, o.email,
+         ]);
+         return ContentService.createTextOutput('ok');
+       }
+
+   Caveat: the customer's browser sends this, so treat it as convenience,
+   not truth — an email or PayPal record is still the authoritative copy,
+   and a blocked request (offline, ad-blocker) simply skips the log without
+   affecting checkout.
+
 ## Real payments (PayPal)
 The checkout includes a **PayPal** option — a real third-party gateway that
 runs fully client-side, so it works on GitHub Pages with no backend. Out of

@@ -93,6 +93,10 @@ document.querySelector('#payBtn').click();
 check('blocks short GCash reference', txt('#checkoutError').includes('13-digit'));
 
 console.log('\n[6] GCash manual-transfer order succeeds');
+// stub the optional order log endpoint
+let logged = null;
+window.SAAK_CONFIG.orderLogUrl = 'https://log.test/orders';
+window.fetch = (url, opts) => { logged = { url, body: JSON.parse(opts.body) }; return Promise.resolve({ ok: true }); };
 document.querySelector('#gcashRef').value = '1234567890123';
 document.querySelector('#payBtn').click();
 check('processing step shown', document.querySelector('#processingStep').hidden === false);
@@ -114,6 +118,10 @@ setTimeout(() => {
   check('cart cleared after order', document.querySelector('#cartCount').hidden === true);
   check('cart persisted to localStorage', window.localStorage.getItem('saak_cart') === '[]');
   check('payment reference cleared for the next order', document.querySelector('#gcashRef').value === '');
+  check('order log POSTed to configured URL', logged !== null && logged.url === 'https://log.test/orders');
+  check('log payload has order id + method + reference', logged.body.orderId.startsWith('SAAK-') && logged.body.method.includes('GCash') && logged.body.reference === '1234567890123');
+  check('log payload itemizes the cart', logged.body.items.length === 1 && logged.body.items[0].name === 'Studio Knit' && logged.body.total === 2649);
+  check('log payload carries the delivery address', logged.body.address.includes('12 Mabini Street'));
   document.querySelector('#doneBtn').click();
   check('modal closes normally after completion', document.querySelector('#checkoutModal').hidden === true);
 

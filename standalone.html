@@ -1104,6 +1104,10 @@ if (typeof window !== 'undefined') window.SAAK_PRODUCTS = PRODUCTS;
 const CONFIG = {
   // Orders are emailed here (GitHub Pages has no backend to record them).
   storeEmail: 'orders@saak-store.example',        // ← change to your email
+  // Optional: also POST every order to this URL (e.g. a Google Apps
+  // Script that appends to a spreadsheet — see README → "Order list").
+  // Leave '' to disable.
+  orderLogUrl: '',
   // Manual-transfer accounts shown at checkout — change to your real ones.
   gcash: { name: 'SAAK Store', number: '0917 000 0000' },
   maya:  { name: 'SAAK Store', number: '0918 000 0000' },
@@ -1111,6 +1115,8 @@ const CONFIG = {
   currency: 'PHP',            // Philippine Peso — supported by PayPal
   paypalSdkTimeoutMs: 12000,
 };
+// Exposed for console tweaks and tests
+if (typeof window !== 'undefined') window.SAAK_CONFIG = CONFIG;
 
 // ---------- Catalog ----------
 // Product data lives in scripts/products.js (edit it directly or via
@@ -1480,6 +1486,31 @@ function finalizeOrder(methodLabel, total, extraRows = '', isCod = false, refere
 
   // Build the order message BEFORE the cart is cleared
   lastOrderText = buildOrderText(orderId, methodLabel, total, reference);
+
+  // Optional order log — fire-and-forget so checkout never blocks on it.
+  // text/plain avoids a CORS preflight, which Apps Script can't answer.
+  if (CONFIG.orderLogUrl) {
+    try {
+      fetch(CONFIG.orderLogUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({
+          orderId,
+          date: new Date().toISOString(),
+          method: methodLabel,
+          reference,
+          total,
+          items: cart.map((l) => {
+            const p = findProduct(l.id);
+            return { name: p.name, size: l.size, qty: l.qty, price: p.price };
+          }),
+          name: $('#shipName').value.trim(),
+          address: `${$('#shipAddress').value.trim()}, ${$('#shipCity').value.trim()} ${$('#shipZip').value.trim()}, ${$('#shipCountry').value}`,
+          email: $('#shipEmail').value.trim(),
+        }),
+      }).catch(() => {});
+    } catch (e) { /* logging must never break checkout */ }
+  }
   $('#orderEmailBtn').href = 'mailto:' + CONFIG.storeEmail +
     '?subject=' + encodeURIComponent('Order ' + orderId) +
     '&body=' + encodeURIComponent(lastOrderText);
