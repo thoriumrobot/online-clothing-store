@@ -5,17 +5,9 @@
    ========================================================= */
 
 // ---------- Catalog ----------
-const PRODUCTS = [
-  { id: 'p1',  name: 'Studio Knit',        price: 49.00, category: 'tops',        img: 'images/product1.jpg',   badge: 'Featured' },
-  { id: 'p2',  name: 'Everyday Tee',       price: 29.99, category: 'tops',        img: 'images/tee.svg' },
-  { id: 'p3',  name: 'District Hoodie',    price: 64.00, category: 'tops',        img: 'images/hoodie.svg',     badge: 'New' },
-  { id: 'p4',  name: 'Straight Trousers',  price: 58.50, category: 'bottoms',     img: 'images/trousers.svg' },
-  { id: 'p5',  name: 'Column Dress',       price: 72.00, category: 'tops',        img: 'images/dress.svg' },
-  { id: 'p6',  name: 'Field Overshirt',    price: 79.00, category: 'outerwear',   img: 'images/overshirt.svg',  badge: 'New' },
-  { id: 'p7',  name: 'Low-Profile Cap',    price: 24.00, category: 'accessories', img: 'images/cap.svg' },
-  { id: 'p8',  name: 'Canvas Tote',        price: 19.50, category: 'accessories', img: 'images/tote.svg' },
-  { id: 'p9',  name: 'Wool Scarf',         price: 34.00, category: 'accessories', img: 'images/scarf.svg' },
-];
+// Product data lives in scripts/products.js (edit it directly or via
+// `node manage-products.js add/remove/list` from the project root).
+const PRODUCTS = (typeof window !== 'undefined' && window.SAAK_PRODUCTS) || [];
 
 const SIZED_CATEGORIES = ['tops', 'bottoms', 'outerwear'];
 const SIZES = ['XS', 'S', 'M', 'L', 'XL'];
@@ -76,6 +68,22 @@ function toast(msg, icon = 'fa-check') {
 // ---------- Product grid ----------
 function renderProducts() {
   const grid = $('#productGrid');
+
+  // Catalog failed to load (e.g. the page was opened without its
+  // scripts/ folder). Say so instead of showing an empty shop.
+  if (PRODUCTS.length === 0) {
+    grid.innerHTML = `
+      <div class="grid-error">
+        <i class="fas fa-triangle-exclamation"></i>
+        <p><strong>The catalog didn't load.</strong></p>
+        <p>Make sure <code>scripts/products.js</code> is next to this page, and open the site
+        from the project folder (e.g. <code>python3 -m http.server 8080</code>) — or use
+        <code>standalone.html</code>, which has everything built in.</p>
+      </div>`;
+    $('#emptyResults').hidden = true;
+    return;
+  }
+
   const term = searchTerm.trim().toLowerCase();
   const visible = PRODUCTS.filter((p) =>
     (activeFilter === 'all' || p.category === activeFilter) &&

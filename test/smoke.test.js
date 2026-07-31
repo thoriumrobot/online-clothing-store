@@ -6,7 +6,8 @@ const { JSDOM } = require('jsdom');
 
 const root = path.join(__dirname, '..');
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-const js = fs.readFileSync(path.join(root, 'scripts', 'main.js'), 'utf8');
+const productsJs = fs.readFileSync(path.join(root, 'scripts', 'products.js'), 'utf8');
+const js = productsJs + '\n' + fs.readFileSync(path.join(root, 'scripts', 'main.js'), 'utf8');
 
 const dom = new JSDOM(html, { runScripts: 'outside-only', url: 'http://localhost/' });
 const { window } = dom;
