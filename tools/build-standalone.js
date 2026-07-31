@@ -47,7 +47,7 @@ css = css.replace("url('../images/hero-image.jpg')", () => `url('${dataUri('imag
 /* Use replacer FUNCTIONS: plain string replacements would corrupt any
    "$" sequences in the injected code ($', $&, etc. are special). */
 html = html.replace(
-  '<link rel="stylesheet" href="styles/style.css">',
+  '<link rel="stylesheet" href="styles/style.css?v=2">',
   () => `<style>\n${css}\n    </style>`
 );
 html = html.replace(
