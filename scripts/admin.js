@@ -142,6 +142,18 @@ function nextId() {
   return 'p' + (max + 1);
 }
 
+function categoryOptions(selected) {
+  return ADMIN.categories
+    .map((c) => `<option value="${c}"${c === selected ? ' selected' : ''}>${c}</option>`)
+    .join('');
+}
+
+function imageOptions(selected) {
+  return ADMIN.images
+    .map((img) => `<option value="${img}"${img === selected ? ' selected' : ''}>${img.replace('images/', '')}</option>`)
+    .join('');
+}
+
 function renderList() {
   const box = $('#itemList');
   $('#itemCount').textContent = products.length;
@@ -155,11 +167,92 @@ function renderList() {
         <strong></strong>
         <span>${p.id} · ${p.category} · <span class="mono">${peso(p.price)}</span>${p.badge ? ' · ' + p.badge : ''}</span>
       </div>
-      <button class="admin-remove">Remove</button>`;
+      <div class="admin-item-actions">
+        <button class="admin-edit">Edit</button>
+        <button class="admin-remove">Remove</button>
+      </div>`;
     row.querySelector('strong').textContent = p.name;
     row.querySelector('.admin-remove').addEventListener('click', () => removeItem(p.id));
+    row.querySelector('.admin-edit').addEventListener('click', () => openEditForm(p.id, row));
     box.appendChild(row);
   });
+}
+
+// Expands an inline edit form beneath the item's row.
+function openEditForm(id, row) {
+  if (row.nextSibling && row.nextSibling.classList && row.nextSibling.classList.contains('admin-edit-form')) {
+    row.nextSibling.remove(); // toggle closed
+    return;
+  }
+  // Close any other open edit form first
+  document.querySelectorAll('.admin-edit-form').forEach((f) => f.remove());
+
+  const p = products.find((x) => x.id === id);
+  if (!p) return;
+
+  const form = document.createElement('div');
+  form.className = 'admin-edit-form';
+  form.innerHTML = `
+    <input type="text" class="edit-name" placeholder="Item name">
+    <input type="number" class="edit-price" placeholder="Price in ₱" min="1" step="0.01" inputmode="decimal">
+    <select class="edit-category">${categoryOptions(p.category)}</select>
+    <select class="edit-image">${imageOptions(p.img)}</select>
+    <input type="text" class="edit-badge" placeholder="Badge (optional)">
+    <div class="edit-row">
+      <button class="btn btn-primary edit-save">Save changes</button>
+      <button class="btn btn-ghost edit-cancel">Cancel</button>
+    </div>`;
+  // Set values via properties to avoid HTML-escaping issues
+  form.querySelector('.edit-name').value = p.name;
+  form.querySelector('.edit-price').value = p.price;
+  form.querySelector('.edit-badge').value = p.badge || '';
+  form.querySelector('.edit-cancel').addEventListener('click', () => form.remove());
+  form.querySelector('.edit-save').addEventListener('click', () => saveEdit(id, form));
+
+  row.after(form);
+  form.querySelector('.edit-name').focus();
+}
+
+async function saveEdit(id, form) {
+  const idx = products.findIndex((p) => p.id === id);
+  if (idx === -1) return;
+
+  const name = form.querySelector('.edit-name').value.trim();
+  const price = parseFloat(form.querySelector('.edit-price').value);
+  const category = form.querySelector('.edit-category').value;
+  const img = form.querySelector('.edit-image').value;
+  const badge = form.querySelector('.edit-badge').value.trim();
+
+  if (!name) return status('Enter an item name.', 'err');
+  if (!isFinite(price) || price <= 0) return status('Enter a valid price above zero.', 'err');
+  // A different item must not already have this name
+  if (products.some((p) => p.id !== id && p.name.toLowerCase() === name.toLowerCase())) {
+    return status(`Another item is already named "${name}".`, 'err');
+  }
+
+  const before = { ...products[idx] };
+  const updated = { id, name, price, category, img };
+  if (badge) updated.badge = badge;
+
+  // Nothing changed? Skip the commit.
+  if (JSON.stringify(before) === JSON.stringify(updated)) {
+    form.remove();
+    return status('No changes to save.');
+  }
+
+  setBusy(true);
+  status('Saving to GitHub…');
+  try {
+    products[idx] = updated;
+    await commitCatalog(`edit ${updated.name} (${id})`);
+    renderList();
+    status(`Updated ${updated.name} — live site updates in ~1–2 minutes.`);
+  } catch (e) {
+    products[idx] = before;
+    renderList();
+    status(e.message, 'err');
+  }
+  setBusy(false);
 }
 
 function setBusy(busy) {
@@ -338,14 +431,8 @@ function logout() {
 }
 
 function init() {
-  // image choices
-  const sel = $('#newImage');
-  ADMIN.images.forEach((img) => {
-    const o = document.createElement('option');
-    o.value = img;
-    o.textContent = img.replace('images/', '');
-    sel.appendChild(o);
-  });
+  // image choices for the add form
+  $('#newImage').innerHTML = imageOptions();
 
   $('#connectBtn').addEventListener('click', connect);
   $('#addBtn').addEventListener('click', addItem);

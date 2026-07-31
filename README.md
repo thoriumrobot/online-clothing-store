@@ -163,8 +163,13 @@ repository via the GitHub API, and Pages redeploys the store automatically
    **Fine-grained tokens** → Generate. Repository access: **only this
    repository**. Permissions: **Contents → Read and write**. Nothing else.
 2. Open `https://<your-pages-url>/admin.html` on the phone, paste the
-   token, and connect. Add/remove items from the forms; every change is a
-   commit, so the git log doubles as an audit trail.
+   token, and connect. **Add, edit, or remove** items from the forms:
+   - *Add* — fill the "Add item" form.
+   - *Edit* — tap **Edit** on any item to open an inline form pre-filled
+     with its current name, price, category, image, and badge; change what
+     you need and tap **Save changes** (the item's ID never changes).
+   - *Remove* — tap **Remove**.
+   Every change is a commit, so the git log doubles as an audit trail.
 
 **Orders on the phone:** the manager's ORDERS card shows the order list —
 paste the Apps Script web-app URL and its access KEY once (saved on the
@@ -274,4 +279,4 @@ real wallet PINs or card numbers in front-end code.
     node test/smoke.test.js       # cart, filters, checkout, GCash + bank flows, order log
     node test/visibility.test.js  # nothing hidden renders on load; only 2 methods offered
     node test/catalog.test.js     # standalone build, CLI, peso pricing, sort, progress
-    node test/admin.test.js       # smartphone catalog manager against a stubbed GitHub API
+    node test/admin.test.js       # smartphone add/edit/remove + orders, against a stubbed GitHub API

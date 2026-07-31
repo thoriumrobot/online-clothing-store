@@ -32,6 +32,17 @@
         .admin-remove { background: none; border: 1px solid var(--line); border-radius: var(--radius);
             color: #B4231A; padding: 8px 12px; font-size: 12px; cursor: pointer; }
         .admin-remove:disabled { opacity: 0.5; }
+        .admin-item-actions { display: flex; flex-direction: column; gap: 6px; }
+        .admin-edit { background: none; border: 1px solid var(--line); border-radius: var(--radius);
+            color: var(--ink); padding: 8px 12px; font-size: 12px; cursor: pointer; }
+        .admin-edit:disabled { opacity: 0.5; }
+        .admin-edit-form { padding: 12px; margin: 2px 0 10px; background: var(--stone); border-radius: var(--radius); }
+        .admin-edit-form input, .admin-edit-form select {
+            width: 100%; padding: 12px 13px; margin-bottom: 8px;
+            border: 1px solid var(--line); border-radius: var(--radius);
+            font: 400 15px 'Inter', sans-serif; background: var(--paper); }
+        .edit-row { display: flex; gap: 8px; }
+        .edit-row .btn { flex: 1; padding: 12px; }
         .admin-note { font-size: 12px; color: var(--ash); line-height: 1.6; }
         .admin-note code { font-family: 'IBM Plex Mono', monospace; background: var(--stone); padding: 1px 5px; border-radius: 3px; }
         label.remember { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--ash); margin-bottom: 12px; }

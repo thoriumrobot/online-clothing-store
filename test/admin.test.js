@@ -115,6 +115,50 @@ const b64 = (s) => Buffer.from(s, 'utf8').toString('base64');
   check('catalog back to 5 items', parseProducts(currentContent).length === 5);
   check('list refreshes after removal', d.querySelectorAll('.admin-item').length === 5);
 
+  console.log('\n[B2] Edit an existing item');
+  // Open the edit form on the first item (Everyday Tee)
+  const firstRow = [...d.querySelectorAll('.admin-item')].find((r) => r.textContent.includes('Everyday Tee'));
+  firstRow.querySelector('.admin-edit').click();
+  const form = d.querySelector('.admin-edit-form');
+  check('edit form opens inline under the row', form !== null && form.previousSibling === firstRow);
+  check('edit form pre-fills current name', form.querySelector('.edit-name').value === 'Everyday Tee');
+  check('edit form pre-fills current price', String(form.querySelector('.edit-price').value) === '1299');
+  check('edit form pre-selects current category', form.querySelector('.edit-category').value === 'tops');
+
+  const putsBefore = calls.filter((c) => c.opts.method === 'PUT').length;
+  // Change price and category, add a badge, then save
+  form.querySelector('.edit-price').value = '1499';
+  form.querySelector('.edit-category').value = 'accessories';
+  form.querySelector('.edit-badge').value = 'Sale';
+  form.querySelector('.edit-save').click();
+  await tick();
+  const editPut = calls.filter((c) => c.opts.method === 'PUT');
+  check('edit commits via PUT', editPut.length === putsBefore + 1);
+  const editBody = JSON.parse(editPut[editPut.length - 1].opts.body);
+  check('commit message names the edit', editBody.message.includes('edit Everyday Tee'));
+  const editedFile = Buffer.from(editBody.content, 'base64').toString('utf8');
+  const editedItem = parseProducts(editedFile).find((p) => p.id === 'p1');
+  check('price updated in committed file', editedItem.price === 1499);
+  check('category updated in committed file', editedItem.category === 'accessories');
+  check('badge added in committed file', editedItem.badge === 'Sale');
+  check('id is unchanged by an edit', editedItem.id === 'p1');
+  check('item count stays the same (edit, not add)', parseProducts(editedFile).length === 5);
+  check('edit form closes after save', d.querySelector('.admin-edit-form') === null);
+
+  // Duplicate-name guard on edit
+  const rowB = [...d.querySelectorAll('.admin-item')].find((r) => r.textContent.includes('Straight Trousers'));
+  rowB.querySelector('.admin-edit').click();
+  const formB = d.querySelector('.admin-edit-form');
+  const putsBeforeDup = calls.filter((c) => c.opts.method === 'PUT').length;
+  formB.querySelector('.edit-name').value = 'District Hoodie'; // already exists
+  formB.querySelector('.edit-save').click();
+  await tick();
+  check('rename to an existing name is blocked before commit',
+    calls.filter((c) => c.opts.method === 'PUT').length === putsBeforeDup
+    && d.querySelector('#status').textContent.includes('already named'));
+  d.querySelector('.admin-edit-form').querySelector('.edit-cancel').click();
+  check('cancel closes the edit form', d.querySelector('.admin-edit-form') === null);
+
   console.log('\n[C] Orders list from the order-log endpoint');
   const sampleOrders = [
     { orderId: 'SAAK-A1', date: '2026-07-30T10:00:00Z', method: 'GCash (manual transfer)', reference: '1112223334445',
