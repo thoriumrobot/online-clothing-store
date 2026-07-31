@@ -46,13 +46,36 @@ next page load (rebuild `standalone.html` to see them there too).
 - Toasts, empty states, Escape-to-close, keyboard focus styles,
   reduced-motion support, responsive down to mobile
 
-## Important — payments are simulated
-This is a front-end demo: no real money moves. To accept real e-wallet
-payments, connect the "Pay now" step to a payment provider's API
-(PayPal, Stripe, GCash, Midtrans, etc.) from a server-side backend. Never
-handle real wallet PINs or card numbers directly in front-end code.
+## Deploying to GitHub Pages
+Push the repo, then Settings → Pages → "Deploy from a branch" → `master`,
+`/ (root)`. All paths are relative, so the site works under the project
+subpath. After editing the catalog with `manage-products.js`, commit and
+push — Pages redeploys automatically.
+
+## Real payments (PayPal)
+The checkout includes a **PayPal** option — a real third-party gateway that
+runs fully client-side, so it works on GitHub Pages with no backend. Out of
+the box it uses PayPal's **sandbox** (`paypalClientId: 'sb'` in
+`scripts/main.js` → CONFIG): buttons are real, money is fake. To go live:
+
+1. Create a Business app at https://developer.paypal.com and copy its
+   **Live** client ID.
+2. Paste it into `CONFIG.paypalClientId` in `scripts/main.js`, set your
+   `currency`, and run `node tools/build-standalone.js`.
+3. Test a real transaction end to end before announcing the store.
+
+Honest caveats: with a purely client-side integration the order amount is
+set in the browser, so a technical buyer could tamper with their own
+checkout. PayPal supports this integration style, but once real volume
+matters, add server-side order creation and webhook verification (that
+needs hosting with functions — Netlify/Vercel/Cloudflare — or a small API).
+
+The other checkout methods (SAAK Pay e-wallet, card, cash on delivery)
+remain **simulations** — no real money moves through them. Never collect
+real wallet PINs or card numbers in front-end code.
 
 ## Tests
     npm install jsdom
-    node test/smoke.test.js     # 33 checks: cart, filters, checkout, e-wallet flow
-    node test/catalog.test.js   # 12 checks: standalone build, load-failure error, CLI
+    node test/smoke.test.js             # 33 checks: cart, filters, checkout, e-wallet flow
+    node test/catalog.test.js           # 12 checks: standalone build, load-failure error, CLI
+    node test/visibility-paypal.test.js # 20 checks: nothing hidden shows on load; PayPal flow

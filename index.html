@@ -235,6 +235,15 @@
                             <small>Pay the courier when it arrives</small>
                         </span>
                     </label>
+                    <label class="pay-method" data-method="paypal">
+                        <input type="radio" name="payMethod" value="paypal">
+                        <i class="fab fa-paypal"></i>
+                        <span>
+                            <strong>PayPal</strong>
+                            <small>PayPal balance or linked cards — real gateway</small>
+                        </span>
+                        <em class="pay-badge">Live</em>
+                    </label>
                 </div>
 
                 <!-- E-wallet fields -->
@@ -261,9 +270,16 @@
                     <p class="cod-note"><i class="fas fa-circle-info"></i> Please prepare the exact amount. A $2.00 handling fee applies to cash on delivery.</p>
                 </div>
 
+                <!-- PayPal buttons -->
+                <div class="pay-fields" id="fieldsPaypal" hidden>
+                    <p class="cod-note"><i class="fas fa-circle-info"></i> Fill in your delivery details, then approve the payment in PayPal's secure window. Runs against PayPal's sandbox until you set your live client ID (see README).</p>
+                    <p class="muted" id="paypalStatus"></p>
+                    <div id="paypalButtons"></div>
+                </div>
+
                 <p class="form-error" id="checkoutError" hidden></p>
                 <button class="btn btn-primary btn-block" id="payBtn">Pay now</button>
-                <p class="cart-secure"><i class="fas fa-lock"></i> This is a demo checkout — no real money moves.</p>
+                <p class="cart-secure" id="checkoutFootnote"><i class="fas fa-lock"></i> This is a demo checkout — no real money moves.</p>
             </div>
 
             <!-- Step 2: processing -->

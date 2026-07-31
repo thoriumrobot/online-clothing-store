@@ -4,6 +4,17 @@
    with a simulated e-wallet payment flow (front-end demo).
    ========================================================= */
 
+// ---------- Payment configuration ----------
+// PayPal runs fully client-side, so it works on static hosts like GitHub
+// Pages. 'sb' uses PayPal's sandbox (test money). To go live: create a
+// Business app at https://developer.paypal.com and paste its LIVE client
+// ID here, then rebuild standalone.html. See README → "Real payments".
+const CONFIG = {
+  paypalClientId: 'sb',
+  currency: 'USD',
+  paypalSdkTimeoutMs: 12000,
+};
+
 // ---------- Catalog ----------
 // Product data lives in scripts/products.js (edit it directly or via
 // `node manage-products.js add/remove/list` from the project root).
@@ -256,7 +267,13 @@ function renderCheckoutSummary() {
     ${codRow}
     <div class="sum-row total"><span>Total due</span><span class="mono">${money(orderTotal())}</span></div>`;
   $('#walletBalance').textContent = money(walletBalance);
+
+  // PayPal replaces our pay button with its own
+  $('#payBtn').hidden = selectedMethod === 'paypal';
   $('#payBtn').textContent = selectedMethod === 'cod' ? 'Place order' : `Pay ${money(orderTotal())}`;
+  $('#checkoutFootnote').innerHTML = selectedMethod === 'paypal'
+    ? '<i class="fas fa-lock"></i> PayPal handles your payment details — this site never sees them.'
+    : '<i class="fas fa-lock"></i> E-wallet, card, and cash on delivery are demo methods — no real money moves.';
 }
 
 function openCheckout() {
@@ -268,6 +285,7 @@ function openCheckout() {
   document.body.classList.add('no-scroll');
   showStep('checkoutStep');
   renderCheckoutSummary();
+  if (selectedMethod === 'paypal') renderPayPalButtons();
 }
 
 function closeCheckout() {
@@ -300,6 +318,9 @@ function validateCheckout() {
   if (!name || !address || !city || !zip) return 'Please fill in all delivery details.';
   if (!validEmail(email)) return 'Please enter a valid email for your receipt.';
 
+  // PayPal collects and validates payment details in its own window.
+  if (selectedMethod === 'paypal') return null;
+
   if (selectedMethod === 'ewallet') {
     const walletId = $('#walletId').value.trim();
     const pin = $('#walletPin').value.trim();
@@ -320,6 +341,27 @@ function validateCheckout() {
   return null; // valid
 }
 
+/* Shared success path for every payment method. `extraRows` lets a
+   gateway add its own receipt lines (e.g. a PayPal transaction ID). */
+function finalizeOrder(methodLabel, total, extraRows = '', isCod = false) {
+  const orderId = 'SAAK-' + Date.now().toString(36).toUpperCase();
+  const email = $('#shipEmail').value.trim();
+
+  $('#successDetail').textContent = isCod
+    ? `Order placed — pay ${money(total)} to the courier on delivery. A confirmation was sent to ${email}.`
+    : `${money(total)} paid via ${methodLabel}. A receipt was sent to ${email}.`;
+  $('#receipt').innerHTML = `
+    <div class="sum-row"><span>Order</span><span>${orderId}</span></div>
+    <div class="sum-row"><span>Method</span><span>${methodLabel}</span></div>
+    <div class="sum-row"><span>Total</span><span>${money(total)}</span></div>
+    ${extraRows}`;
+
+  cart = [];
+  saveCart();
+  renderCart();
+  showStep('successStep');
+}
+
 function placeOrder() {
   const error = validateCheckout();
   if (error) { showError(error); return; }
@@ -332,32 +374,71 @@ function placeOrder() {
     method === 'ewallet' ? 'Contacting your e-wallet…' :
     method === 'card' ? 'Authorizing your card…' : 'Placing your order…';
 
-  // Simulated payment gateway round-trip
+  // Simulated payment gateway round-trip (demo methods only)
   setTimeout(() => {
+    let extra = '';
     if (method === 'ewallet') {
       walletBalance = Math.round((walletBalance - total) * 100) / 100;
       store.set('saak_wallet', walletBalance);
+      extra = `<div class="sum-row"><span>Wallet balance</span><span>${money(walletBalance)}</span></div>`;
     }
-
-    const orderId = 'SAAK-' + Date.now().toString(36).toUpperCase();
-    const email = $('#shipEmail').value.trim();
-    const methodLabel = method === 'ewallet' ? 'E-Wallet (SAAK Pay)' : method === 'card' ? 'Card' : 'Cash on delivery';
-
-    $('#successDetail').textContent =
-      method === 'cod'
-        ? `Order placed — pay ${money(total)} to the courier on delivery. A confirmation was sent to ${email}.`
-        : `${money(total)} paid via ${methodLabel}. A receipt was sent to ${email}.`;
-    $('#receipt').innerHTML = `
-      <div class="sum-row"><span>Order</span><span>${orderId}</span></div>
-      <div class="sum-row"><span>Method</span><span>${methodLabel}</span></div>
-      <div class="sum-row"><span>Total</span><span>${money(total)}</span></div>
-      ${method === 'ewallet' ? `<div class="sum-row"><span>Wallet balance</span><span>${money(walletBalance)}</span></div>` : ''}`;
-
-    cart = [];
-    saveCart();
-    renderCart();
-    showStep('successStep');
+    const label = method === 'ewallet' ? 'E-Wallet (SAAK Pay)' : method === 'card' ? 'Card' : 'Cash on delivery';
+    finalizeOrder(label, total, extra, method === 'cod');
   }, 1600);
+}
+
+// ---------- PayPal (real third-party gateway) ----------
+let paypalSdkPromise = null;
+
+function loadPayPalSdk() {
+  if (window.paypal) return Promise.resolve();
+  if (paypalSdkPromise) return paypalSdkPromise;
+  paypalSdkPromise = new Promise((resolve, reject) => {
+    const fail = (why) => { paypalSdkPromise = null; clearTimeout(timer); reject(new Error(why)); };
+    const timer = setTimeout(() => fail('PayPal SDK timed out'), CONFIG.paypalSdkTimeoutMs);
+    const s = document.createElement('script');
+    s.src = 'https://www.paypal.com/sdk/js?client-id=' +
+      encodeURIComponent(CONFIG.paypalClientId) + '&currency=' + CONFIG.currency;
+    s.onload = () => { clearTimeout(timer); resolve(); };
+    s.onerror = () => fail('PayPal SDK failed to load');
+    document.head.appendChild(s);
+  });
+  return paypalSdkPromise;
+}
+
+function renderPayPalButtons() {
+  const box = $('#paypalButtons');
+  const status = $('#paypalStatus');
+  box.innerHTML = '';
+  status.textContent = 'Loading PayPal…';
+
+  loadPayPalSdk().then(() => {
+    status.textContent = '';
+    window.paypal.Buttons({
+      // Gate PayPal's popup behind our delivery-details validation
+      onClick: (data, actions) => {
+        const error = validateCheckout();
+        if (error) { showError(error); return actions.reject(); }
+        $('#checkoutError').hidden = true;
+        return actions.resolve();
+      },
+      createOrder: (data, actions) => actions.order.create({
+        purchase_units: [{
+          description: 'SAAK clothing order',
+          amount: { value: orderTotal().toFixed(2), currency_code: CONFIG.currency },
+        }],
+      }),
+      onApprove: (data, actions) => actions.order.capture().then((details) => {
+        const txn = details && details.id ? details.id : data.orderID;
+        finalizeOrder('PayPal', orderTotal(),
+          `<div class="sum-row"><span>PayPal txn</span><span>${txn}</span></div>`);
+      }),
+      onError: () => showError('PayPal could not complete the payment. Try again or choose another method.'),
+    }).render(box);
+  }).catch(() => {
+    status.textContent = '';
+    showError("PayPal didn't load — check your connection, or set your client ID in scripts/main.js (see README).");
+  });
 }
 
 // ---------- Wiring ----------
@@ -431,6 +512,8 @@ function init() {
       $('#fieldsEwallet').hidden = selectedMethod !== 'ewallet';
       $('#fieldsCard').hidden = selectedMethod !== 'card';
       $('#fieldsCod').hidden = selectedMethod !== 'cod';
+      $('#fieldsPaypal').hidden = selectedMethod !== 'paypal';
+      if (selectedMethod === 'paypal') renderPayPalButtons();
       renderCheckoutSummary();
     });
   });
