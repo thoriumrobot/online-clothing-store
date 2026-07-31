@@ -312,6 +312,9 @@ function openCheckout() {
 }
 
 function closeCheckout() {
+  // Never close mid-payment: the confirmation — and the order-email step
+  // that actually delivers the order to the store — would be lost.
+  if (!$('#processingStep').hidden) return;
   $('#checkoutModal').hidden = true;
   $('#checkoutModal').setAttribute('aria-hidden', 'true');
   $('#overlay').hidden = true;
@@ -407,6 +410,8 @@ function finalizeOrder(methodLabel, total, extraRows = '', isCod = false, refere
   cart = [];
   saveCart();
   renderCart();
+  $('#gcashRef').value = '';
+  $('#mayaRef').value = '';
   showStep('successStep');
 }
 

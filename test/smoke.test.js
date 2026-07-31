@@ -96,6 +96,8 @@ console.log('\n[6] GCash manual-transfer order succeeds');
 document.querySelector('#gcashRef').value = '1234567890123';
 document.querySelector('#payBtn').click();
 check('processing step shown', document.querySelector('#processingStep').hidden === false);
+document.querySelector('#modalClose').click(); // must NOT close mid-payment
+check('modal cannot be closed while recording the order', document.querySelector('#checkoutModal').hidden === false);
 
 setTimeout(() => {
   check('success step shown', document.querySelector('#successStep').hidden === false);
@@ -111,6 +113,9 @@ setTimeout(() => {
   check('order email carries the payment reference', body.includes('ref 1234567890123'));
   check('cart cleared after order', document.querySelector('#cartCount').hidden === true);
   check('cart persisted to localStorage', window.localStorage.getItem('saak_cart') === '[]');
+  check('payment reference cleared for the next order', document.querySelector('#gcashRef').value === '');
+  document.querySelector('#doneBtn').click();
+  check('modal closes normally after completion', document.querySelector('#checkoutModal').hidden === true);
 
   console.log('\n[7] Maya and COD paths');
   const dom2 = new JSDOM(html, { runScripts: 'outside-only', url: 'http://localhost/' });
