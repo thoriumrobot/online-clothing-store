@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500">
+  <rect width="400" height="500" fill="#DCE3DE"/>
+  <g fill="none" stroke="#14140F" stroke-width="7" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M135 145 L95 175 L75 260 L118 278 L132 230 L132 395 L268 395 L268 230 L282 278 L325 260 L305 175 L265 145 Q200 120 135 145 Z"/><path d="M165 145 Q200 190 235 145"/><path d="M132 300 L175 285 M268 300 L225 285"/><path d="M185 340 L185 395 M215 340 L215 395"/>
+  </g>
+  <text x="24" y="472" font-family="Arial, sans-serif" font-size="16" letter-spacing="6" fill="#14140F">SAAK</text>
+</svg>
