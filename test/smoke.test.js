@@ -100,6 +100,7 @@ setTimeout(() => {
   check('receipt has SAAK order id', txt('#receipt').includes('SAAK-'));
   check('receipt shows e-wallet method', txt('#receipt').includes('E-Wallet'));
   check('wallet debited: ₱20,000 − ₱2,649 = ₱17,351.00', txt('#receipt').includes('₱17,351.00'));
+  check('demo copy is honest (no fake email claim)', txt('#successDetail').includes('demo') && !txt('#successDetail').includes('receipt was sent'));
   check('cart cleared after purchase', document.querySelector('#cartCount').hidden === true);
   check('cart persisted to localStorage', window.localStorage.getItem('saak_cart') === '[]');
 

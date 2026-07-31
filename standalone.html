@@ -363,6 +363,7 @@ h1, h2, h3, .logo, .footer-logo {
 .contact-form input,
 .contact-form textarea,
 .form-grid input,
+.form-grid select,
 .pay-fields input {
   width: 100%;
   padding: 13px 15px;
@@ -947,6 +948,17 @@ footer { background: var(--ink); color: var(--paper); padding: 56px 5vw 28px; }
                     <input type="text" id="shipAddress" class="span-2" placeholder="Street address" autocomplete="street-address">
                     <input type="text" id="shipCity" placeholder="City" autocomplete="address-level2">
                     <input type="text" id="shipZip" placeholder="Postal code" autocomplete="postal-code">
+                    <select id="shipCountry" class="span-2" aria-label="Country" autocomplete="country">
+                        <option value="PH" selected>Philippines</option>
+                        <option value="SG">Singapore</option>
+                        <option value="HK">Hong Kong</option>
+                        <option value="JP">Japan</option>
+                        <option value="AU">Australia</option>
+                        <option value="AE">United Arab Emirates</option>
+                        <option value="US">United States</option>
+                        <option value="GB">United Kingdom</option>
+                        <option value="CA">Canada</option>
+                    </select>
                 </div>
 
                 <h4 class="form-title">Payment method</h4>
@@ -1437,11 +1449,15 @@ function validateCheckout() {
    gateway add its own receipt lines (e.g. a PayPal transaction ID). */
 function finalizeOrder(methodLabel, total, extraRows = '', isCod = false) {
   const orderId = 'SAAK-' + Date.now().toString(36).toUpperCase();
-  const email = $('#shipEmail').value.trim();
 
-  $('#successDetail').textContent = isCod
-    ? `Order placed — pay ${money(total)} to the courier on delivery. A confirmation was sent to ${email}.`
-    : `${money(total)} paid via ${methodLabel}. A receipt was sent to ${email}.`;
+  // Honest copy: this site sends no emails. PayPal emails its own
+  // receipt to the buyer; the demo methods charge nothing at all.
+  $('#successDetail').textContent =
+    methodLabel === 'PayPal'
+      ? `${money(total)} paid via PayPal. PayPal will email the receipt to your PayPal account.`
+      : isCod
+        ? `Demo order placed — in a live store you would pay ${money(total)} to the courier on delivery.`
+        : `${money(total)} paid via ${methodLabel} (demo — no real charge was made).`;
   $('#receipt').innerHTML = `
     <div class="sum-row"><span>Order</span><span>${orderId}</span></div>
     <div class="sum-row"><span>Method</span><span>${methodLabel}</span></div>
@@ -1515,9 +1531,21 @@ function renderPayPalButtons() {
         return actions.resolve();
       },
       createOrder: (data, actions) => actions.order.create({
+        // Ship to the address typed in our form, not the buyer's
+        // PayPal-stored address.
+        application_context: { shipping_preference: 'SET_PROVIDED_ADDRESS' },
         purchase_units: [{
           description: 'SAAK clothing order',
           amount: { value: orderTotal().toFixed(2), currency_code: CONFIG.currency },
+          shipping: {
+            name: { full_name: $('#shipName').value.trim() },
+            address: {
+              address_line_1: $('#shipAddress').value.trim(),
+              admin_area_2: $('#shipCity').value.trim(),
+              postal_code: $('#shipZip').value.trim(),
+              country_code: $('#shipCountry').value,
+            },
+          },
         }],
       }),
       onApprove: (data, actions) => actions.order.capture().then((details) => {

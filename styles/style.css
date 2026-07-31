@@ -344,6 +344,7 @@ h1, h2, h3, .logo, .footer-logo {
 .contact-form input,
 .contact-form textarea,
 .form-grid input,
+.form-grid select,
 .pay-fields input {
   width: 100%;
   padding: 13px 15px;

@@ -85,12 +85,22 @@ console.log('\n[B] PayPal option (stubbed SDK)');
   check('order amount equals total (₱2,649.00)', order.purchase_units[0].amount.value === '2649.00');
   check('order currency is PHP', order.purchase_units[0].amount.currency_code === 'PHP');
 
+  // the typed delivery address travels with the PayPal order
+  const ship = order.purchase_units[0].shipping;
+  check('order uses the form-provided address', order.application_context.shipping_preference === 'SET_PROVIDED_ADDRESS');
+  check('recipient name transmitted', ship.name.full_name === 'Alex Reyes');
+  check('street address transmitted', ship.address.address_line_1 === '12 Harbor Lane');
+  check('city and postal code transmitted', ship.address.admin_area_2 === 'Portsmouth' && ship.address.postal_code === 'PO1 2AB');
+  check('country defaults to PH', ship.address.country_code === 'PH');
+
   // approve → capture → receipt with transaction id, cart cleared
   await buttonOpts.onApprove({ orderID: 'FALLBACK' }, {
     order: { capture: () => Promise.resolve({ id: 'TXN-TEST-123', status: 'COMPLETED' }) },
   });
   check('success step shown after capture', d.querySelector('#successStep').hidden === false);
   check('receipt includes PayPal txn id', d.querySelector('#receipt').textContent.includes('TXN-TEST-123'));
+  check('PayPal copy: receipt comes from PayPal', d.querySelector('#successDetail').textContent.includes('PayPal will email the receipt'));
+  check('no false "receipt was sent" claim', !d.querySelector('#successDetail').textContent.includes('was sent to'));
   check('cart cleared after PayPal payment', d.querySelector('#cartCount').hidden === true);
 
   // SDK failure path shows a helpful error (fresh page, no stub)

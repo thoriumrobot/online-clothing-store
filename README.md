@@ -66,7 +66,14 @@ the box it uses PayPal's **sandbox** (`paypalClientId: 'sb'` in
 2. Paste it into `CONFIG.paypalClientId` in `scripts/main.js` (currency is
    already set to `PHP` — Philippine Peso), and run
    `node tools/build-standalone.js`.
-3. Test a real transaction end to end before announcing the store.
+3. In your PayPal account, set **Payment Receiving Preferences** to accept
+   or auto-convert PHP — otherwise, if your account doesn't hold a PHP
+   balance, incoming peso payments sit as "pending" until manually accepted.
+4. Test a real transaction end to end before announcing the store.
+
+The checkout sends the customer's typed delivery address with the PayPal
+order (`SET_PROVIDED_ADDRESS`), so the correct shipping address appears in
+your PayPal transaction details.
 
 Honest caveats: with a purely client-side integration the order amount is
 set in the browser, so a technical buyer could tamper with their own

@@ -361,11 +361,15 @@ function validateCheckout() {
    gateway add its own receipt lines (e.g. a PayPal transaction ID). */
 function finalizeOrder(methodLabel, total, extraRows = '', isCod = false) {
   const orderId = 'SAAK-' + Date.now().toString(36).toUpperCase();
-  const email = $('#shipEmail').value.trim();
 
-  $('#successDetail').textContent = isCod
-    ? `Order placed — pay ${money(total)} to the courier on delivery. A confirmation was sent to ${email}.`
-    : `${money(total)} paid via ${methodLabel}. A receipt was sent to ${email}.`;
+  // Honest copy: this site sends no emails. PayPal emails its own
+  // receipt to the buyer; the demo methods charge nothing at all.
+  $('#successDetail').textContent =
+    methodLabel === 'PayPal'
+      ? `${money(total)} paid via PayPal. PayPal will email the receipt to your PayPal account.`
+      : isCod
+        ? `Demo order placed — in a live store you would pay ${money(total)} to the courier on delivery.`
+        : `${money(total)} paid via ${methodLabel} (demo — no real charge was made).`;
   $('#receipt').innerHTML = `
     <div class="sum-row"><span>Order</span><span>${orderId}</span></div>
     <div class="sum-row"><span>Method</span><span>${methodLabel}</span></div>
@@ -439,9 +443,21 @@ function renderPayPalButtons() {
         return actions.resolve();
       },
       createOrder: (data, actions) => actions.order.create({
+        // Ship to the address typed in our form, not the buyer's
+        // PayPal-stored address.
+        application_context: { shipping_preference: 'SET_PROVIDED_ADDRESS' },
         purchase_units: [{
           description: 'SAAK clothing order',
           amount: { value: orderTotal().toFixed(2), currency_code: CONFIG.currency },
+          shipping: {
+            name: { full_name: $('#shipName').value.trim() },
+            address: {
+              address_line_1: $('#shipAddress').value.trim(),
+              admin_area_2: $('#shipCity').value.trim(),
+              postal_code: $('#shipZip').value.trim(),
+              country_code: $('#shipCountry').value,
+            },
+          },
         }],
       }),
       onApprove: (data, actions) => actions.order.capture().then((details) => {
