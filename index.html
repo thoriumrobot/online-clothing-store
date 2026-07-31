@@ -70,14 +70,15 @@
     <!-- Ticker strip -->
     <div class="ticker" aria-hidden="true">
         <div class="ticker-track">
-            <span>Free shipping over ₱2,500</span><span>•</span>
             <span>GCash &amp; bank transfer accepted</span><span>•</span>
             <span>30-day free returns</span><span>•</span>
-            <span>New drop every month</span><span>•</span>
-            <span>Free shipping over ₱2,500</span><span>•</span>
+            <span>Verified Philippine seller</span><span>•</span>
             <span>GCash &amp; bank transfer accepted</span><span>•</span>
             <span>30-day free returns</span><span>•</span>
-            <span>New drop every month</span><span>•</span>
+            <span>Verified Philippine seller</span><span>•</span>
+            <span>GCash &amp; bank transfer accepted</span><span>•</span>
+            <span>30-day free returns</span><span>•</span>
+            <span>Verified Philippine seller</span><span>•</span>
         </div>
     </div>
 
@@ -114,8 +115,8 @@
             </div>
             <div class="feature">
                 <i class="fas fa-truck-fast"></i>
-                <h3>Fast, free shipping</h3>
-                <p>Free standard shipping on orders over ₱2,500. Most orders arrive within 3–5 business days.</p>
+                <h3>Fast, flat-rate shipping</h3>
+                <p>Flat ₱150 nationwide courier shipping. Most orders arrive within 3–5 business days.</p>
             </div>
             <div class="feature">
                 <i class="fas fa-rotate-left"></i>
@@ -191,10 +192,6 @@
         </div>
         <div class="cart-items" id="cartItems"><!-- rendered by main.js --></div>
         <div class="cart-foot" id="cartFoot">
-            <div class="ship-progress" id="shipProgress" hidden>
-                <p id="shipProgressText"></p>
-                <div class="ship-bar"><div class="ship-bar-fill" id="shipBarFill"></div></div>
-            </div>
             <div class="cart-row"><span>Subtotal</span><span class="mono" id="cartSubtotal">₱0.00</span></div>
             <div class="cart-row muted"><span>Shipping</span><span class="mono" id="cartShipping">—</span></div>
             <div class="cart-row total"><span>Total</span><span class="mono" id="cartTotal">₱0.00</span></div>
@@ -220,7 +217,7 @@
                     <input type="text" id="shipName" placeholder="Full name" autocomplete="name">
                     <input type="email" id="shipEmail" placeholder="Email for receipt" autocomplete="email">
                     <input type="text" id="shipAddress" class="span-2" placeholder="Street address" autocomplete="street-address">
-                    <input type="text" id="shipCity" placeholder="City" autocomplete="address-level2">
+                    <input type="text" id="shipRegion" placeholder="Region / province" autocomplete="address-level1">
                     <input type="text" id="shipZip" placeholder="Postal code" autocomplete="postal-code">
                     <select id="shipCountry" class="span-2" aria-label="Country" autocomplete="country">
                         <option value="PH" selected>Philippines</option>
@@ -263,6 +260,10 @@
                         <div class="wallet-balance">Send to <strong class="mono" id="gcashNumber"></strong></div>
                     </div>
                     <p class="info-note"><i class="fas fa-circle-info"></i> Send the exact total to the GCash account above (account name: <span id="gcashName"></span>), then enter the 13-digit reference number from your GCash receipt. We verify the transfer in our app before shipping.</p>
+                    <div class="qr-box" id="qrBoxGcash" hidden>
+                        <img id="qrImgGcash" alt="QR Ph payment code">
+                        <p>Or scan with GCash or any QR Ph app</p>
+                    </div>
                     <input type="text" id="gcashRef" placeholder="GCash reference number (13 digits)" inputmode="numeric" maxlength="13">
                 </div>
 
@@ -273,6 +274,10 @@
                         <div class="wallet-balance">Account <strong class="mono" id="bankNumber"></strong></div>
                     </div>
                     <p class="info-note"><i class="fas fa-circle-info"></i> Send the exact total via InstaPay to the account above (account name: <span id="bankAccountName"></span>) from any PH bank or wallet app, then enter the reference / trace number from your transfer receipt. InstaPay is capped at ₱50,000 per transaction; transfers are instant and cannot be reversed, and we verify receipt before shipping.</p>
+                    <div class="qr-box" id="qrBoxBank" hidden>
+                        <img id="qrImgBank" alt="QR Ph payment code">
+                        <p>Or scan with any QR Ph bank or e-wallet app</p>
+                    </div>
                     <input type="text" id="bankRef" placeholder="Transfer reference / trace number" maxlength="25">
                 </div>
 

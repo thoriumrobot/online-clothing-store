@@ -82,9 +82,9 @@ console.log('\n[D] Peso pricing, sorting, and free-shipping progress');
   const d = dom.window.document;
   const names = () => [...d.querySelectorAll('.product-item h3')].map((h) => h.textContent);
 
-  check('prices display with peso sign and separators', d.body.textContent.includes('\u20b12,499.00'));
+  check('prices display with peso sign and separators', d.body.textContent.includes('\u20b11,299.00'));
   check('no dollar prices remain on the page', !/\$\d/.test(d.body.textContent));
-  check('ticker announces \u20b12,500 free-shipping threshold', d.body.textContent.includes('Free shipping over \u20b12,500'));
+  check('offers removed from ticker', !d.body.textContent.includes('Free shipping over') && !d.body.textContent.includes('New drop'));
 
   const sort = d.querySelector('#sortSelect');
   sort.value = 'price-asc';
@@ -95,18 +95,15 @@ console.log('\n[D] Peso pricing, sorting, and free-shipping progress');
   check('sort high-to-low puts Field Overshirt (\u20b13,999) first', names()[0] === 'Field Overshirt');
   sort.value = 'name';
   sort.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
-  check('sort by name is alphabetical', names()[0] === 'Canvas Tote' && names()[1] === 'Column Dress');
+  check('sort by name is alphabetical', names()[0] === 'Canvas Tote' && names()[1] === 'District Hoodie');
   sort.value = 'featured';
   sort.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
 
-  // Progress bar: Everyday Tee \u20b11,299 → needs \u20b11,201 more
-  d.querySelectorAll('.product-item')[1].querySelector('.add-btn').click();
-  check('progress bar visible with items in cart', d.querySelector('#shipProgress').hidden === false);
-  check('progress shows remaining \u20b11,201.00', d.querySelector('#shipProgressText').textContent.includes('\u20b11,201.00'));
-  check('bar width reflects subtotal share', d.querySelector('#shipBarFill').style.width === (1299 / 2500 * 100) + '%');
-  d.querySelectorAll('.product-item')[1].querySelector('.add-btn').click(); // \u20b12,598 ≥ \u20b12,500
-  check('crossing threshold unlocks free shipping message', d.querySelector('#shipProgressText').textContent.includes('unlocked'));
-  check('bar caps at 100%', d.querySelector('#shipBarFill').style.width === '100%');
+  // Flat shipping now applies to every order (free-shipping offer removed)
+  d.querySelectorAll('.product-item')[0].querySelector('.add-btn').click();
+  const shipText = [...d.querySelectorAll('.cart-row')].map((r) => r.textContent).join(' ');
+  check('cart shows flat ₱150 shipping', shipText.includes('₱150.00'));
+  check('no free-shipping progress bar in DOM', d.querySelector('#shipProgress') === null);
 }
 
 console.log(`\nRESULT: ${passed} passed, ${failed} failed`);

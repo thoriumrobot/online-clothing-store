@@ -60,5 +60,43 @@ console.log('\n[B] Only GCash and bank transfer are accepted');
   check('verification promise in footnote', d.querySelector('#checkoutFootnote').textContent.includes('verify'));
 }
 
-console.log(`\nRESULT: ${passed} passed, ${failed} failed`);
-process.exit(failed ? 1 : 0);
+console.log('\n[C] Automatic GCash gateway (redirect flow)');
+{
+  const dom = bootStandalone();
+  const { window } = dom;
+  const d = window.document;
+
+  // Off by default → manual reference flow
+  d.querySelector('.product-item .buy-btn').click();
+  check('GCash number is the configured wallet', d.querySelector('#gcashNumber').textContent === '+639305314317');
+  check('auto off by default → manual pay label', d.querySelector('#payBtn').textContent.includes("I've sent"));
+
+  // Enable auto mode and stub the gateway + redirect
+  window.SAAK_CONFIG.autoGcash = { enabled: true, createUrl: 'https://gw.test/create-gcash', returnUrl: '' };
+  let posted = null;
+  window.fetch = (url, opts) => { posted = { url, body: JSON.parse(opts.body) }; return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ checkout_url: 'https://gcash.test/pay/abc' }) }); };
+
+  // reopen so the button label reflects auto mode
+  d.querySelector('#modalClose').click();
+  d.querySelector('.product-item .buy-btn').click();
+  check('auto on → GCash pay label', d.querySelector('#payBtn').textContent.includes('Pay') && d.querySelector('#payBtn').textContent.includes('GCash'));
+
+  // fill valid delivery + trigger
+  d.querySelector('#shipName').value = 'Ana Cruz';
+  d.querySelector('#shipEmail').value = 'ana@x.ph';
+  d.querySelector('#shipAddress').value = '12 Mabini St';
+  d.querySelector('#shipRegion').value = 'Metro Manila';
+  d.querySelector('#shipZip').value = '1600';
+  d.querySelector('#payBtn').click();
+
+  return Promise.resolve().then(() => new Promise((r) => setTimeout(r, 30))).then(() => {
+    check('gateway called at configured URL', posted && posted.url === 'https://gw.test/create-gcash');
+    check('gateway sent centavo amount + PHP', posted && posted.body.amount === 274800 && posted.body.currency === 'PHP');
+    check('gateway sent a return_url', posted && typeof posted.body.return_url === 'string' && posted.body.return_url.length > 0);
+    check('manual reference hidden in auto mode', d.querySelector('#gcashRef').hidden === true);
+    check('pending order stored for the return trip', !!window.localStorage.getItem('saak_pending_order'));
+
+    console.log(`\nRESULT: ${passed} passed, ${failed} failed`);
+    process.exit(failed ? 1 : 0);
+  });
+}

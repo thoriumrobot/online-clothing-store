@@ -24,6 +24,7 @@ const ADMIN = {
 let token = '';
 let fileSha = '';
 let products = [];
+let ordersCfg = null; // { url, key } for the order-log endpoint
 
 const $ = (sel) => document.querySelector(sel);
 const peso = (n) => '\u20b1' + n.toLocaleString('en-PH', { minimumFractionDigits: 2 });
@@ -216,6 +217,94 @@ async function removeItem(id) {
   setBusy(false);
 }
 
+// ---------- Orders (read from the order-log endpoint) ----------
+function loadOrdersCfg() {
+  try { ordersCfg = JSON.parse(localStorage.getItem('saak_orders_cfg')); }
+  catch (e) { ordersCfg = null; }
+  if (ordersCfg && !ordersCfg.url) ordersCfg = null;
+}
+
+function showOrdersUi() {
+  const configured = !!ordersCfg;
+  $('#ordersSetup').hidden = configured;
+  $('#ordersView').hidden = !configured;
+  if (ordersCfg) { $('#ordersUrl').value = ordersCfg.url; $('#ordersKey').value = ordersCfg.key || ''; }
+}
+
+function renderOrders(list) {
+  const sorted = [...list].sort((x, y) => new Date(y.date) - new Date(x.date));
+  const revenue = sorted.reduce((s, o) => s + (Number(o.total) || 0), 0);
+  $('#ordersSummary').textContent = `${sorted.length} order(s) · ${peso(revenue)} total`;
+
+  const box = $('#ordersList');
+  box.innerHTML = '';
+  if (sorted.length === 0) {
+    const p = document.createElement('p');
+    p.className = 'admin-note';
+    p.textContent = 'No orders logged yet.';
+    box.appendChild(p);
+    return;
+  }
+  // Customer-entered fields are set via textContent, never innerHTML.
+  sorted.forEach((o) => {
+    const row = document.createElement('div');
+    row.className = 'order-item';
+    const top = document.createElement('div');
+    top.className = 'order-top';
+    const id = document.createElement('strong');
+    id.textContent = o.orderId || '(no id)';
+    const total = document.createElement('span');
+    total.className = 'mono';
+    total.textContent = peso(Number(o.total) || 0);
+    top.append(id, total);
+    row.appendChild(top);
+
+    const metas = [
+      `${o.date ? new Date(o.date).toLocaleString('en-PH') : ''} · ${o.method || ''}${o.reference ? ' · ref ' + o.reference : ''}`,
+      (o.items || []).map((i) => `${i.qty}x ${i.name}${i.size ? ' (' + i.size + ')' : ''}`).join(', '),
+      `${o.name || ''} — ${o.address || ''}`,
+      o.email || '',
+    ];
+    metas.filter(Boolean).forEach((text) => {
+      const span = document.createElement('span');
+      span.className = 'order-meta';
+      span.textContent = text;
+      row.appendChild(span);
+    });
+    box.appendChild(row);
+  });
+}
+
+async function fetchOrders() {
+  if (!ordersCfg) return;
+  status('Loading orders…');
+  try {
+    const sep = ordersCfg.url.includes('?') ? '&' : '?';
+    const res = await fetch(`${ordersCfg.url}${sep}key=${encodeURIComponent(ordersCfg.key || '')}&t=${Date.now()}`);
+    if (!res.ok) throw new Error('Orders endpoint returned ' + res.status + ' — check the URL.');
+    const data = await res.json();
+    if (data.error) {
+      throw new Error(data.error === 'unauthorized'
+        ? 'Access key rejected by the orders endpoint.'
+        : 'Orders endpoint error: ' + data.error);
+    }
+    renderOrders(data.orders || []);
+    status(`Loaded ${(data.orders || []).length} order(s).`);
+  } catch (e) {
+    status(e.message, 'err');
+  }
+}
+
+function saveOrdersCfg() {
+  const url = $('#ordersUrl').value.trim();
+  const key = $('#ordersKey').value.trim();
+  if (!/^https:\/\//.test(url)) return status('Enter the https:// Apps Script /exec URL.', 'err');
+  ordersCfg = { url, key };
+  localStorage.setItem('saak_orders_cfg', JSON.stringify(ordersCfg));
+  showOrdersUi();
+  fetchOrders();
+}
+
 async function connect() {
   token = $('#tokenInput').value.trim();
   if (!token) return status('Paste your access token first.', 'err');
@@ -228,7 +317,10 @@ async function connect() {
     $('#manageView').hidden = false;
     $('#logoutBtn').hidden = false;
     renderList();
+    loadOrdersCfg();
+    showOrdersUi();
     status(`Connected — ${products.length} items in the catalog.`);
+    if (ordersCfg) fetchOrders();
   } catch (e) {
     status(e.message, 'err');
   }
@@ -258,6 +350,9 @@ function init() {
   $('#connectBtn').addEventListener('click', connect);
   $('#addBtn').addEventListener('click', addItem);
   $('#logoutBtn').addEventListener('click', logout);
+  $('#ordersConnectBtn').addEventListener('click', saveOrdersCfg);
+  $('#ordersRefreshBtn').addEventListener('click', fetchOrders);
+  $('#ordersSettingsBtn').addEventListener('click', () => { $('#ordersSetup').hidden = false; $('#ordersView').hidden = true; });
 
   const saved = sessionStorage.getItem('saak_admin_token') || localStorage.getItem('saak_admin_token');
   if (saved) {

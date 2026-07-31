@@ -19,6 +19,24 @@ const CONFIG = {
   // Manual-transfer accounts shown at checkout — change to your real ones.
   gcash: { name: 'SAAK Store', number: '+639305314317' },
   bank:  { bank: 'BPI', name: 'SAAK Store', number: '1234 5678 90' },
+  // Optional: path to your QR Ph / GCash QR image (export it from your
+  // app, save e.g. as images/qrph.png). Shown at checkout so buyers can
+  // scan instead of typing the account number. '' hides it.
+  qrPh: '',
+
+  // ---- Automatic GCash payment (PayMongo gateway) ----
+  // Set autoGcash.enabled = true and paste your PayMongo endpoint to make
+  // the GCash button redirect the buyer through GCash's real OTP/PIN flow
+  // and return an automatically-confirmed payment. Funds settle to the
+  // GCash/bank account registered on the PayMongo side (a gateway cannot
+  // pay directly to a raw phone number — see README). Requires the tiny
+  // serverless endpoint from the README (createUrl). Leave enabled=false
+  // to keep the manual-reference flow.
+  autoGcash: {
+    enabled: false,
+    createUrl: '',        // e.g. https://your-worker.workers.dev/create-gcash
+    returnUrl: '',        // where GCash redirects back; '' = this page
+  },
 };
 // Exposed for console tweaks and tests
 if (typeof window !== 'undefined') window.SAAK_CONFIG = CONFIG;
@@ -30,8 +48,7 @@ const PRODUCTS = (typeof window !== 'undefined' && window.SAAK_PRODUCTS) || [];
 
 const SIZED_CATEGORIES = ['tops', 'bottoms', 'outerwear'];
 const SIZES = ['XS', 'S', 'M', 'L', 'XL'];
-const FREE_SHIPPING_THRESHOLD = 2500;   // ₱
-const SHIPPING_FLAT = 150;              // ₱ standard courier rate
+const SHIPPING_FLAT = 150;              // ₱ flat courier rate on every order
 
 // ---------- Safe storage (falls back to memory if unavailable) ----------
 const store = (() => {
@@ -68,7 +85,7 @@ const money = (n) => '₱' + n.toLocaleString('en-PH', { minimumFractionDigits: 
 const findProduct = (id) => PRODUCTS.find((p) => p.id === id);
 const cartCount = () => cart.reduce((s, i) => s + i.qty, 0);
 const cartSubtotal = () => cart.reduce((s, i) => s + findProduct(i.id).price * i.qty, 0);
-const shippingFor = (subtotal) => (subtotal === 0 || subtotal >= FREE_SHIPPING_THRESHOLD) ? 0 : SHIPPING_FLAT;
+const shippingFor = (subtotal) => subtotal === 0 ? 0 : SHIPPING_FLAT;
 
 function saveCart() { store.set('saak_cart', cart); }
 
@@ -233,16 +250,6 @@ function renderCart() {
   const subtotal = cartSubtotal();
   const shipping = shippingFor(subtotal);
 
-  // Free-shipping progress bar
-  const progress = $('#shipProgress');
-  progress.hidden = subtotal === 0;
-  if (subtotal > 0) {
-    const pct = Math.min(100, (subtotal / FREE_SHIPPING_THRESHOLD) * 100);
-    $('#shipBarFill').style.width = pct + '%';
-    $('#shipProgressText').innerHTML = subtotal >= FREE_SHIPPING_THRESHOLD
-      ? '<strong>Free shipping unlocked!</strong>'
-      : `Add <strong>${money(FREE_SHIPPING_THRESHOLD - subtotal)}</strong> more for free shipping`;
-  }
 
   $('#cartSubtotal').textContent = money(subtotal);
   $('#cartShipping').textContent = subtotal === 0 ? '—' : (shipping === 0 ? 'Free' : money(shipping));
@@ -284,7 +291,9 @@ function renderCheckoutSummary() {
     ${lines}
     <div class="sum-row muted"><span>Shipping</span><span class="mono">${shipping === 0 ? 'Free' : money(shipping)}</span></div>
     <div class="sum-row total"><span>Total due</span><span class="mono">${money(orderTotal())}</span></div>`;
-  $('#payBtn').textContent = `I've sent ${money(orderTotal())} — place order`;
+  $('#payBtn').textContent = (selectedMethod === 'gcash' && autoGcashEnabled())
+    ? `Pay ${money(orderTotal())} with GCash`
+    : `I've sent ${money(orderTotal())} — place order`;
   const capWarning = selectedMethod === 'bank' && orderTotal() > 50000
     ? ' This order exceeds InstaPay\'s ₱50,000 per-transaction cap — send via PESONet or split into multiple transfers.'
     : '';
@@ -299,6 +308,21 @@ function openCheckout() {
   $('#checkoutModal').setAttribute('aria-hidden', 'false');
   $('#overlay').hidden = false;
   document.body.classList.add('no-scroll');
+  // Show the owner's QR Ph code if one is configured (manual mode only)
+  const hasQr = !!CONFIG.qrPh && !autoGcashEnabled();
+  $('#qrBoxGcash').hidden = !hasQr;
+  $('#qrBoxBank').hidden = !CONFIG.qrPh;
+  if (CONFIG.qrPh) {
+    $('#qrImgGcash').src = CONFIG.qrPh;
+    $('#qrImgBank').src = CONFIG.qrPh;
+  }
+  // In auto mode the buyer pays through GCash directly — hide the manual
+  // "enter your reference" input and its instructions.
+  const auto = autoGcashEnabled();
+  $('#gcashRef').hidden = auto;
+  const gcashNote = document.querySelector('#fieldsGcash .info-note');
+  if (gcashNote) gcashNote.hidden = auto;
+
   showStep('checkoutStep');
   renderCheckoutSummary();
 }
@@ -330,13 +354,15 @@ function validateCheckout() {
   const name = $('#shipName').value.trim();
   const email = $('#shipEmail').value.trim();
   const address = $('#shipAddress').value.trim();
-  const city = $('#shipCity').value.trim();
+  const region = $('#shipRegion').value.trim();
   const zip = $('#shipZip').value.trim();
 
-  if (!name || !address || !city || !zip) return 'Please fill in all delivery details.';
+  if (!name || !address || !region || !zip) return 'Please fill in all delivery details.';
   if (!validEmail(email)) return 'Please enter a valid email for your receipt.';
 
-  if (selectedMethod === 'gcash' && !/^\d{13}$/.test($('#gcashRef').value.trim())) {
+  // In automatic mode the buyer pays through GCash's own flow, so no
+  // manual reference is entered — skip that check.
+  if (selectedMethod === 'gcash' && !autoGcashEnabled() && !/^\d{13}$/.test($('#gcashRef').value.trim())) {
     return 'Enter the 13-digit reference number from your GCash receipt.';
   }
   if (selectedMethod === 'bank' && !/^[A-Za-z0-9-]{6,25}$/.test($('#bankRef').value.replace(/\s/g, ''))) {
@@ -364,7 +390,7 @@ function buildOrderText(orderId, methodLabel, total, reference) {
     `Payment: ${methodLabel}${reference ? ' — ref ' + reference : ''}`,
     '',
     `Deliver to: ${$('#shipName').value.trim()}`,
-    `${$('#shipAddress').value.trim()}, ${$('#shipCity').value.trim()} ${$('#shipZip').value.trim()}, ${$('#shipCountry').value}`,
+    `${$('#shipAddress').value.trim()}, ${$('#shipRegion').value.trim()} ${$('#shipZip').value.trim()}, ${$('#shipCountry').value}`,
     `Email: ${$('#shipEmail').value.trim()}`,
   ].join('\n');
 }
@@ -395,7 +421,7 @@ function finalizeOrder(methodLabel, total, extraRows = '', isCod = false, refere
             return { name: p.name, size: l.size, qty: l.qty, price: p.price };
           }),
           name: $('#shipName').value.trim(),
-          address: `${$('#shipAddress').value.trim()}, ${$('#shipCity').value.trim()} ${$('#shipZip').value.trim()}, ${$('#shipCountry').value}`,
+          address: `${$('#shipAddress').value.trim()}, ${$('#shipRegion').value.trim()} ${$('#shipZip').value.trim()}, ${$('#shipCountry').value}`,
           email: $('#shipEmail').value.trim(),
         }),
       }).catch(() => {});
@@ -442,10 +468,93 @@ function placeOrder() {
   }, 1200);
 }
 
+// ---------- Automatic GCash payment (PayMongo gateway) ----------
+// When CONFIG.autoGcash.enabled, the GCash button hands off to a small
+// serverless endpoint that creates a PayMongo GCash source and returns a
+// checkout_url. We redirect the buyer there; GCash runs its own OTP + PIN
+// challenge; PayMongo confirms the payment and settles to the merchant's
+// registered account. On return we read ?payment=success|failed.
+function autoGcashEnabled() {
+  return !!(CONFIG.autoGcash && CONFIG.autoGcash.enabled && CONFIG.autoGcash.createUrl);
+}
+
+async function startAutoGcash() {
+  const err = validateCheckout();
+  if (err) { showError(err); return; }
+  $('#checkoutError').hidden = true;
+  showStep('processingStep');
+  $('#processingText').textContent = 'Redirecting you to GCash…';
+
+  // Remember the cart + shipping so we can finalize after the redirect.
+  store.set('saak_pending_order', {
+    total: orderTotal(),
+    cart,
+    ship: {
+      name: $('#shipName').value.trim(),
+      email: $('#shipEmail').value.trim(),
+      address: `${$('#shipAddress').value.trim()}, ${$('#shipRegion').value.trim()} ${$('#shipZip').value.trim()}, ${$('#shipCountry').value}`,
+    },
+  });
+
+  try {
+    const res = await fetch(CONFIG.autoGcash.createUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        amount: Math.round(orderTotal() * 100), // PayMongo uses centavos
+        currency: 'PHP',
+        description: 'SAAK order',
+        return_url: (CONFIG.autoGcash.returnUrl || location.href.split('?')[0]),
+      }),
+    });
+    if (!res.ok) throw new Error('gateway ' + res.status);
+    const data = await res.json();
+    const url = data.checkout_url || data.checkoutUrl || (data.attributes && data.attributes.redirect && data.attributes.redirect.checkout_url);
+    if (!url) throw new Error('no checkout_url in gateway response');
+    window.location.href = url; // hand off to GCash
+  } catch (e) {
+    showStep('checkoutStep');
+    showError('Could not reach the GCash gateway. Use the manual reference below, or try again.');
+  }
+}
+
+// After returning from GCash, finalize (or clear) the pending order.
+function handleGcashReturn() {
+  const params = new URLSearchParams(location.search);
+  const outcome = params.get('payment');
+  if (!outcome) return;
+
+  const pending = store.get('saak_pending_order', null);
+  // Clean the URL so a refresh doesn't re-trigger.
+  history.replaceState(null, '', location.pathname);
+
+  if (outcome === 'success' && pending) {
+    cart = pending.cart || [];
+    // finalizeOrder reads the ship fields from the DOM; repopulate them.
+    if (pending.ship) {
+      const [addr, rest] = (pending.ship.address || '').split(', ');
+      $('#shipName').value = pending.ship.name || '';
+      $('#shipEmail').value = pending.ship.email || '';
+    }
+    store.set('saak_pending_order', null);
+    openCart();
+    $('#checkoutModal').hidden = false;
+    $('#checkoutModal').setAttribute('aria-hidden', 'false');
+    $('#overlay').hidden = false;
+    document.body.classList.add('no-scroll');
+    finalizeOrder('GCash (auto)', pending.total,
+      '<div class="sum-row"><span>Confirmed by</span><span>GCash / PayMongo</span></div>', false, '');
+  } else if (outcome === 'failed') {
+    store.set('saak_pending_order', null);
+    toast('GCash payment was not completed. Please try again.', 'fa-circle-info');
+  }
+}
+
 // ---------- Wiring ----------
 function init() {
   renderProducts();
   renderCart();
+  handleGcashReturn();
 
   // Mobile menu
   const menuIcon = $('#menuIcon');
@@ -504,7 +613,10 @@ function init() {
   // Checkout modal
   $('#modalClose').addEventListener('click', closeCheckout);
   $('#doneBtn').addEventListener('click', () => { closeCheckout(); toast('Thanks for shopping with SAAK!'); });
-  $('#payBtn').addEventListener('click', placeOrder);
+  $('#payBtn').addEventListener('click', () => {
+    if (selectedMethod === 'gcash' && autoGcashEnabled()) startAutoGcash();
+    else placeOrder();
+  });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') { closeCheckout(); closeCart(); }
   });

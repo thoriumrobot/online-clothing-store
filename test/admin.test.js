@@ -21,7 +21,7 @@ const tick = (ms = 20) => new Promise((r) => setTimeout(r, ms));
 console.log('\n[A] Serialization round-trips with the CLI format');
 {
   const parsed = parseProducts(productsSource);
-  check('parses the real catalog (9 items)', parsed.length === 9 && parsed[0].name === 'Studio Knit');
+  check('parses the real catalog (5 items)', parsed.length === 5 && parsed[0].name === 'Everyday Tee');
   const rewritten = serializeProducts(parsed);
   check('serialized output re-parses identically', JSON.stringify(parseProducts(rewritten)) === JSON.stringify(parsed));
   check('output keeps the IIFE wrapper', rewritten.includes('(function () {') && rewritten.includes('})();'));
@@ -30,7 +30,7 @@ console.log('\n[A] Serialization round-trips with the CLI format');
   const tmp = path.join(root, 'test', '_tmp_products.js');
   fs.writeFileSync(tmp, rewritten);
   const viaRequire = require(tmp);
-  check('Node can require the serialized file', viaRequire.length === 9);
+  check('Node can require the serialized file', viaRequire.length === 5);
   fs.unlinkSync(tmp);
 }
 
@@ -80,8 +80,8 @@ const b64 = (s) => Buffer.from(s, 'utf8').toString('base64');
   d.querySelector('#connectBtn').click();
   await tick();
   check('connects and unlocks manager', d.querySelector('#manageView').hidden === false);
-  check('lists all 9 items', d.querySelectorAll('.admin-item').length === 9);
-  check('shows peso prices', d.querySelector('#itemList').textContent.includes('\u20b12,499.00'));
+  check('lists all 5 items', d.querySelectorAll('.admin-item').length === 5);
+  check('shows peso prices', d.querySelector('#itemList').textContent.includes('\u20b11,299.00'));
 
   // add an item
   d.querySelector('#newName').value = 'Monsoon Jacket';
@@ -95,8 +95,8 @@ const b64 = (s) => Buffer.from(s, 'utf8').toString('base64');
   const committed = Buffer.from(JSON.parse(putCalls[0].opts.body).content, 'base64').toString('utf8');
   check('commit message describes the change', JSON.parse(putCalls[0].opts.body).message.includes('add Monsoon Jacket'));
   check('committed file contains the new item', committed.includes('Monsoon Jacket') && committed.includes('4499.00'));
-  check('committed file is CLI-parseable', parseProducts(committed).length === 10);
-  check('list refreshes to 10 items', d.querySelectorAll('.admin-item').length === 10);
+  check('committed file is CLI-parseable', parseProducts(committed).length === 6);
+  check('list refreshes to 6 items', d.querySelectorAll('.admin-item').length === 6);
 
   // duplicate blocked without a commit
   d.querySelector('#newName').value = 'Monsoon Jacket';
@@ -112,8 +112,52 @@ const b64 = (s) => Buffer.from(s, 'utf8').toString('base64');
   target.querySelector('.admin-remove').click();
   await tick();
   check('remove commits via PUT', calls.filter((c) => c.opts.method === 'PUT').length === 2);
-  check('catalog back to 9 items', parseProducts(currentContent).length === 9);
-  check('list refreshes after removal', d.querySelectorAll('.admin-item').length === 9);
+  check('catalog back to 5 items', parseProducts(currentContent).length === 5);
+  check('list refreshes after removal', d.querySelectorAll('.admin-item').length === 5);
+
+  console.log('\n[C] Orders list from the order-log endpoint');
+  const sampleOrders = [
+    { orderId: 'SAAK-A1', date: '2026-07-30T10:00:00Z', method: 'GCash (manual transfer)', reference: '1112223334445',
+      total: 2649, items: [{ name: 'Studio Knit', qty: 1, size: 'M', price: 2499 }],
+      name: 'Ana Cruz', address: '12 Mabini St, Pasig 1600, PH', email: 'ana@x.ph' },
+    { orderId: 'SAAK-B2', date: '2026-07-31T09:30:00Z', method: 'Bank transfer (InstaPay)', reference: 'INSTA-77',
+      total: 999, items: [{ name: 'Canvas Tote', qty: 1, price: 999 }],
+      name: 'Ben <b>Reyes</b>', address: '7 Rizal Ave, Cebu 6000, PH', email: 'ben@x.ph' },
+  ];
+  const realFetch = dom.window.fetch;
+  dom.window.fetch = (url, opts) => {
+    if (String(url).startsWith('https://orders.test/exec')) {
+      const key = new URL(url).searchParams.get('key');
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(
+        key === 'secret-9' ? { orders: sampleOrders } : { error: 'unauthorized' }
+      ) });
+    }
+    return realFetch(url, opts);
+  };
+
+  // wrong key rejected
+  d.querySelector('#ordersUrl').value = 'https://orders.test/exec';
+  d.querySelector('#ordersKey').value = 'wrong';
+  d.querySelector('#ordersConnectBtn').click();
+  await tick();
+  check('wrong access key rejected', d.querySelector('#status').textContent.includes('Access key rejected'));
+
+  // right key loads the list
+  d.querySelector('#ordersSettingsBtn').click();
+  d.querySelector('#ordersKey').value = 'secret-9';
+  d.querySelector('#ordersConnectBtn').click();
+  await tick();
+  check('orders view unlocked', d.querySelector('#ordersView').hidden === false);
+  const orderRows = d.querySelectorAll('.order-item');
+  check('renders both orders', orderRows.length === 2);
+  check('newest order first', orderRows[0].textContent.includes('SAAK-B2'));
+  check('summary counts orders and revenue', d.querySelector('#ordersSummary').textContent.includes('2 order(s)')
+    && d.querySelector('#ordersSummary').textContent.includes('\u20b13,648.00'));
+  check('shows items, reference, and address', orderRows[1].textContent.includes('1x Studio Knit (M)')
+    && orderRows[1].textContent.includes('ref 1112223334445') && orderRows[1].textContent.includes('Pasig'));
+  check('customer input rendered as text, not HTML', orderRows[0].querySelector('b') === null
+    && orderRows[0].textContent.includes('Ben <b>Reyes</b>'));
+  check('settings persist on the device', JSON.parse(dom.window.localStorage.getItem('saak_orders_cfg')).key === 'secret-9');
 
   console.log(`\nRESULT: ${passed} passed, ${failed} failed`);
   process.exit(failed ? 1 : 0);

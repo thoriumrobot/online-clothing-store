@@ -36,6 +36,11 @@
         .admin-note code { font-family: 'IBM Plex Mono', monospace; background: var(--stone); padding: 1px 5px; border-radius: 3px; }
         label.remember { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--ash); margin-bottom: 12px; }
         label.remember input { width: auto; margin: 0; }
+        .order-item { padding: 12px 0; border-bottom: 1px solid var(--line); }
+        .order-item:last-child { border-bottom: none; }
+        .order-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+        .order-top strong { font-size: 14px; }
+        .order-meta { display: block; font-size: 12px; color: var(--ash); margin-top: 3px; word-break: break-word; }
     </style>
 </head>
 <body>
@@ -62,6 +67,22 @@
 
     <!-- Manager -->
     <div id="manageView" hidden>
+        <div class="admin-card">
+            <h2>ORDERS</h2>
+            <div id="ordersSetup">
+                <input type="url" id="ordersUrl" placeholder="Orders endpoint URL (Apps Script /exec)">
+                <input type="password" id="ordersKey" placeholder="Access key" autocomplete="off">
+                <button class="btn btn-primary btn-block" id="ordersConnectBtn">Save &amp; load orders</button>
+                <p class="admin-note" style="margin-top:10px">Needs the order-log spreadsheet from the README ("Where orders are stored") with the keyed <code>doGet</code>. The key must match the one in your Apps Script.</p>
+            </div>
+            <div id="ordersView" hidden>
+                <p class="admin-note" id="ordersSummary" style="margin-bottom:8px"></p>
+                <div id="ordersList"></div>
+                <button class="btn btn-ghost btn-block" id="ordersRefreshBtn" style="margin-top:12px">Refresh orders</button>
+                <button class="link-btn" id="ordersSettingsBtn" style="margin-top:8px">Change orders settings</button>
+            </div>
+        </div>
+
         <div class="admin-card">
             <h2>ADD ITEM</h2>
             <input type="text" id="newName" placeholder="Item name">

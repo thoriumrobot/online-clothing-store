@@ -25,13 +25,13 @@ window.eval(js);
 document.dispatchEvent(new window.Event('DOMContentLoaded', { bubbles: true }));
 
 console.log('\n[1] Initial render');
-check('9 products rendered', document.querySelectorAll('.product-item').length === 9);
+check('5 products rendered', document.querySelectorAll('.product-item').length === 5);
 check('cart badge hidden when empty', document.querySelector('#cartCount').hidden === true);
 check('checkout button disabled when empty', document.querySelector('#checkoutBtn').disabled === true);
 
 console.log('\n[2] Category filter + search');
 document.querySelector('[data-filter="accessories"]').click();
-check('accessories filter shows 3 items', document.querySelectorAll('.product-item').length === 3);
+check('accessories filter shows 1 item', document.querySelectorAll('.product-item').length === 1);
 document.querySelector('[data-filter="all"]').click();
 const si = document.querySelector('#searchInput');
 si.value = 'hoodie';
@@ -45,23 +45,23 @@ si.dispatchEvent(new window.Event('input', { bubbles: true }));
 
 console.log('\n[3] Cart operations');
 const cards = document.querySelectorAll('.product-item');
-// Add "Studio Knit" ($49) twice and "Everyday Tee" ($29.99) once
+// Add Everyday Tee (1299) twice and Straight Trousers (2899) once
 cards[0].querySelector('.add-btn').click();
 cards[0].querySelector('.add-btn').click();
 cards[1].querySelector('.add-btn').click();
 check('badge shows 3 items', txt('#cartCount') === '3');
-check('subtotal = ₱6,297.00', txt('#cartSubtotal') === '₱6,297.00');
-check('free shipping over ₱2,500', txt('#cartShipping') === 'Free');
-check('total = ₱6,297.00', txt('#cartTotal') === '₱6,297.00');
+check('subtotal = ₱5,497.00', txt('#cartSubtotal') === '₱5,497.00');
+check('flat ₱150 shipping applies', txt('#cartShipping') === '₱150.00');
+check('total = ₱5,647.00', txt('#cartTotal') === '₱5,647.00');
 
-// Decrease Studio Knit to 1 → subtotal 78.99, still free shipping
+// Decrease Everyday Tee to 1 → subtotal 4198
 document.querySelector('.cart-item [data-act="dec"]').click();
-check('qty decrease → subtotal ₱3,798.00', txt('#cartSubtotal') === '₱3,798.00');
+check('qty decrease → subtotal ₱4,198.00', txt('#cartSubtotal') === '₱4,198.00');
 // Remove the tee → subtotal 49.00, below threshold → shipping 5.99
 document.querySelectorAll('.cart-item [data-act="rm"]')[1].click();
-check('remove line → subtotal ₱2,499.00', txt('#cartSubtotal') === '₱2,499.00');
+check('remove line → subtotal ₱1,299.00', txt('#cartSubtotal') === '₱1,299.00');
 check('shipping ₱150.00 under threshold', txt('#cartShipping') === '₱150.00');
-check('total = ₱2,649.00', txt('#cartTotal') === '₱2,649.00');
+check('total = ₱1,449.00', txt('#cartTotal') === '₱1,449.00');
 
 console.log('\n[4] Size selection routes into cart');
 const sized = document.querySelectorAll('.product-item')[2]; // District Hoodie
@@ -72,19 +72,22 @@ check('cart line records chosen size L',
 document.querySelectorAll('.cart-item [data-act="rm"]')[1].click(); // remove hoodie again
 
 console.log('\n[5] Checkout validation (GCash default)');
+window.SAAK_CONFIG.qrPh = 'images/tee.svg'; // owner configured a QR code
 document.querySelector('#checkoutBtn').click();
 check('checkout modal opens', document.querySelector('#checkoutModal').hidden === false);
-check('summary shows total due', txt('#checkoutSummary').includes('\u20b12,649.00'));
+check('summary shows total due', txt('#checkoutSummary').includes('\u20b11,449.00'));
 check('GCash is the default method', document.querySelector('#fieldsGcash').hidden === false);
 check('configured GCash number shown', txt('#gcashNumber') === '+639305314317');
-check('pay button states the sent amount', txt('#payBtn').includes('\u20b12,649.00'));
+check('QR Ph code shown when configured', document.querySelector('#qrBoxGcash').hidden === false
+  && document.querySelector('#qrImgGcash').src.includes('images/tee.svg'));
+check('pay button states the sent amount', txt('#payBtn').includes('\u20b11,449.00'));
 document.querySelector('#payBtn').click();
 check('blocks empty delivery details', document.querySelector('#checkoutError').hidden === false);
 
 document.querySelector('#shipName').value = 'Alex Reyes';
 document.querySelector('#shipEmail').value = 'alex@example.com';
 document.querySelector('#shipAddress').value = '12 Mabini Street';
-document.querySelector('#shipCity').value = 'Pasig';
+document.querySelector('#shipRegion').value = 'Metro Manila';
 document.querySelector('#shipZip').value = '1600';
 document.querySelector('#payBtn').click();
 check('blocks missing GCash reference', txt('#checkoutError').includes('13-digit'));
@@ -112,15 +115,15 @@ setTimeout(() => {
   const mail = document.querySelector('#orderEmailBtn').href;
   check('order email goes to configured store address', mail.startsWith('mailto:orders@saak-store.example'));
   const body = decodeURIComponent(mail);
-  check('order email lists the item', body.includes('Studio Knit'));
-  check('order email carries the delivery address', body.includes('12 Mabini Street') && body.includes('Pasig'));
+  check('order email lists the item', body.includes('Everyday Tee'));
+  check('order email carries the delivery address', body.includes('12 Mabini Street') && body.includes('Metro Manila'));
   check('order email carries the payment reference', body.includes('ref 1234567890123'));
   check('cart cleared after order', document.querySelector('#cartCount').hidden === true);
   check('cart persisted to localStorage', window.localStorage.getItem('saak_cart') === '[]');
   check('payment reference cleared for the next order', document.querySelector('#gcashRef').value === '');
   check('order log POSTed to configured URL', logged !== null && logged.url === 'https://log.test/orders');
   check('log payload has order id + method + reference', logged.body.orderId.startsWith('SAAK-') && logged.body.method.includes('GCash') && logged.body.reference === '1234567890123');
-  check('log payload itemizes the cart', logged.body.items.length === 1 && logged.body.items[0].name === 'Studio Knit' && logged.body.total === 2649);
+  check('log payload itemizes the cart', logged.body.items.length === 1 && logged.body.items[0].name === 'Everyday Tee' && logged.body.total === 1449);
   check('log payload carries the delivery address', logged.body.address.includes('12 Mabini Street'));
   document.querySelector('#doneBtn').click();
   check('modal closes normally after completion', document.querySelector('#checkoutModal').hidden === true);
@@ -130,16 +133,17 @@ setTimeout(() => {
   dom2.window.eval(js);
   dom2.window.document.dispatchEvent(new dom2.window.Event('DOMContentLoaded', { bubbles: true }));
   const d2 = dom2.window.document;
-  d2.querySelectorAll('.product-item')[0].querySelector('.buy-btn').click(); // \u20b12,499 + \u20b1150 ship
+  d2.querySelectorAll('.product-item')[0].querySelector('.buy-btn').click(); // \u20b11,299 + \u20b1150 ship
   check('buy-now opens checkout directly', d2.querySelector('#checkoutModal').hidden === false);
   check('only GCash and bank methods offered', d2.querySelectorAll('.pay-method').length === 2);
+  check('QR hidden when not configured', d2.querySelector('#qrBoxGcash').hidden === true && d2.querySelector('#qrBoxBank').hidden === true);
 
   d2.querySelector('[data-method="bank"]').click();
   check('bank fields revealed', d2.querySelector('#fieldsBank').hidden === false && d2.querySelector('#fieldsGcash').hidden === true);
   check('configured bank account shown', d2.querySelector('#bankNumber').textContent === '1234 5678 90' && d2.querySelector('#bankName').textContent === 'BPI');
-  check('total has no extra fees', d2.querySelector('#checkoutSummary').textContent.includes('\u20b12,649.00'));
+  check('total is flat ₱1,449.00', d2.querySelector('#checkoutSummary').textContent.includes('\u20b11,449.00'));
   d2.querySelector('#shipName').value = 'B Cruz'; d2.querySelector('#shipEmail').value = 'b@x.ph';
-  d2.querySelector('#shipAddress').value = '7 Rizal Ave'; d2.querySelector('#shipCity').value = 'Cebu'; d2.querySelector('#shipZip').value = '6000';
+  d2.querySelector('#shipAddress').value = '7 Rizal Ave'; d2.querySelector('#shipRegion').value = 'Central Visayas'; d2.querySelector('#shipZip').value = '6000';
   d2.querySelector('#bankRef').value = 'AB1';
   d2.querySelector('#payBtn').click();
   check('blocks too-short bank reference', d2.querySelector('#checkoutError').hidden === false);

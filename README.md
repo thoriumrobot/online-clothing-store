@@ -55,7 +55,70 @@ Push the repo, then Settings → Pages → "Deploy from a branch" → `master`,
 subpath. After editing the catalog with `manage-products.js`, commit and
 push — Pages redeploys automatically.
 
-## Payment methods: GCash + Bank transfer (InstaPay) only
+## Automatic GCash payment (optional)
+The checkout can take **automatic GCash payments** — the buyer taps "Pay
+with GCash", goes through GCash's real OTP + PIN screens, and the payment
+is confirmed automatically (no manual reference typing, no waiting for you
+to verify). This is **off by default**; turn it on in `scripts/main.js` →
+`CONFIG.autoGcash`.
+
+Important reality check from the research, so you set this up correctly:
+
+- A website — especially a static one on GitHub Pages — **cannot legally
+  push money into a raw GCash number** like +639305314317 by itself. GCash
+  collection for a store goes through a BSP-regulated gateway (PayMongo,
+  Xendit, Maya, Checkout.com, Adyen, etc.). You sign up once, and the money
+  the gateway collects settles to the GCash/bank account you register with
+  them. The number +639305314317 is set as the store's displayed GCash
+  identity and is where you'd point settlement in your gateway dashboard.
+- The gateway needs one server-side call (it uses a secret key that must
+  never sit in front-end code). Because GitHub Pages has no server, deploy
+  the ~20-line serverless function below to a free host (Cloudflare
+  Workers, Vercel, Netlify, Deno Deploy) and put its URL in
+  `CONFIG.autoGcash.createUrl`. Everything else stays on GitHub Pages.
+
+Example Cloudflare Worker (PayMongo GCash source):
+
+    export default {
+      async fetch(req) {
+        const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type' };
+        if (req.method === 'OPTIONS') return new Response('', { headers: cors });
+        const { amount, return_url } = await req.json();
+        const r = await fetch('https://api.paymongo.com/v1/sources', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json',
+            Authorization: 'Basic ' + btoa(PAYMONGO_SECRET_KEY + ':') },
+          body: JSON.stringify({ data: { attributes: {
+            amount, currency: 'PHP', type: 'gcash',
+            redirect: { success: return_url + '?payment=success', failed: return_url + '?payment=failed' },
+          }}}),
+        });
+        const d = await r.json();
+        return new Response(JSON.stringify({ checkout_url: d.data.attributes.redirect.checkout_url }),
+          { headers: { ...cors, 'Content-Type': 'application/json' } });
+      },
+    };
+
+Then set in CONFIG:
+
+    autoGcash: { enabled: true, createUrl: 'https://your-worker.workers.dev', returnUrl: '' },
+
+**Does it work for real transactions?** Yes, once (1) you have an activated
+gateway merchant account (PayMongo needs an M2/fully-verified account for
+live keys), (2) the worker uses your **live** secret key, and (3) you
+register your settlement account. Until then it runs against the gateway's
+test mode. Confirmation is real and automatic — PayMongo fires a
+`payment.paid` webhook and the buyer is redirected back with
+`?payment=success`, which the site reads to complete the order.
+**One caveat the research is explicit about:** the *final* success signal
+should be confirmed server-side via that webhook; the redirect alone is a
+good UX signal but a determined user could forge the return URL, so for
+higher-value goods, verify the payment status in your gateway dashboard
+before shipping.
+
+When `autoGcash.enabled` is false, checkout uses the manual flow below.
+
+## Payment methods: GCash + Bank transfer (InstaPay)
 The checkout accepts exactly two methods, both real and both manually
 verified — the standard pattern for small PH sellers without a gateway:
 
@@ -72,6 +135,13 @@ Set your real accounts in `scripts/main.js` → CONFIG:
     storeEmail: 'orders@yourstore.ph',
     gcash: { name: 'Your Name', number: '09XX XXX XXXX' },
     bank:  { bank: 'BPI', name: 'Your Name', number: 'XXXX XXXX XX' },
+
+**QR Ph at checkout (optional, recommended):** export your personal QR
+from the GCash app (Pay QR → Generate) or your bank's QR Ph code, save it
+as e.g. `images/qrph.png`, and set `qrPh: 'images/qrph.png'` in CONFIG.
+Checkout then shows the scannable code in both payment panels — one QR Ph
+code works from GCash, Maya, and 40+ participating bank apps — so buyers
+scan instead of typing your number. Rebuild standalone after adding it.
 
 **Critical verification rule:** reference numbers and receipt screenshots
 can be faked. Never ship until the money is visible in your own GCash app
@@ -96,6 +166,16 @@ repository via the GitHub API, and Pages redeploys the store automatically
    token, and connect. Add/remove items from the forms; every change is a
    commit, so the git log doubles as an audit trail.
 
+**Orders on the phone:** the manager's ORDERS card shows the order list —
+paste the Apps Script web-app URL and its access KEY once (saved on the
+device) and it displays every logged order newest-first with items,
+payment reference, delivery address (address / region / postal code), and a running order count + revenue
+total, with a Refresh button. It reads the same spreadsheet the store
+writes to, so remember its limit: orders only appear there if the
+customer's browser successfully sent the log — the email inbox remains
+the authoritative record. The key rides on the request URL over HTTPS;
+treat it like a password and change it in the script to rotate it.
+
 Security notes, honestly: `admin.html` is public but useless without a
 token — all authorization is GitHub's. The token is held in the browser
 (only saved to the device if "Remember" is ticked) and is sent only to
@@ -117,18 +197,34 @@ in three places:
    total, address, email). Point it at a Google Apps Script to collect
    every order in a spreadsheet — that spreadsheet is your order list:
 
-   In Google Sheets: Extensions → Apps Script, paste, then
-   Deploy → Web app → access: "Anyone", and put the web-app URL in
-   `orderLogUrl` (rebuild standalone after):
+   In Google Sheets: Extensions → Apps Script, paste the script below,
+   change the KEY, then Deploy → Web app → access: "Anyone". Put the
+   web-app URL in `orderLogUrl` (and rebuild standalone). The same URL +
+   KEY also power the Orders view in `admin.html`:
+
+       const KEY = 'change-this-secret';
 
        function doPost(e) {
          const o = JSON.parse(e.postData.contents);
          SpreadsheetApp.getActiveSheet().appendRow([
            o.orderId, o.date, o.method, o.reference, o.total,
            o.items.map(i => i.qty + 'x ' + i.name + (i.size ? ' (' + i.size + ')' : '')).join('; '),
-           o.name, o.address, o.email,
+           o.name, o.address, o.email, JSON.stringify(o),
          ]);
          return ContentService.createTextOutput('ok');
+       }
+
+       function doGet(e) {
+         if (!e.parameter.key || e.parameter.key !== KEY) {
+           return ContentService.createTextOutput(JSON.stringify({ error: 'unauthorized' }))
+             .setMimeType(ContentService.MimeType.JSON);
+         }
+         const rows = SpreadsheetApp.getActiveSheet().getDataRange().getValues();
+         const orders = rows
+           .map(r => { try { return JSON.parse(r[9]); } catch (err) { return null; } })
+           .filter(Boolean);
+         return ContentService.createTextOutput(JSON.stringify({ orders }))
+           .setMimeType(ContentService.MimeType.JSON);
        }
 
    Caveat: the customer's browser sends this, so treat it as convenience,
