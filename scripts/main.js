@@ -377,7 +377,25 @@ function validateCheckout() {
    sends. This is how the order actually reaches the store. */
 let lastOrderText = '';
 
-function buildOrderText(orderId, methodLabel, total, reference) {
+function shipDetails(ship) {
+  // Prefer an explicitly-passed ship object (used after the auto-GCash
+  // redirect, when the form fields may be empty); otherwise read the form.
+  if (ship) {
+    return {
+      name: ship.name || '',
+      address: ship.address || '',
+      email: ship.email || '',
+    };
+  }
+  return {
+    name: $('#shipName').value.trim(),
+    address: `${$('#shipAddress').value.trim()}, ${$('#shipRegion').value.trim()} ${$('#shipZip').value.trim()}, ${$('#shipCountry').value}`,
+    email: $('#shipEmail').value.trim(),
+  };
+}
+
+function buildOrderText(orderId, methodLabel, total, reference, ship) {
+  const s = shipDetails(ship);
   const items = cart.map((l) => {
     const p = findProduct(l.id);
     return `- ${l.qty} x ${p.name}${l.size ? ' (' + l.size + ')' : ''} — ${money(p.price * l.qty)}`;
@@ -389,19 +407,20 @@ function buildOrderText(orderId, methodLabel, total, reference) {
     `Total: ${money(total)}`,
     `Payment: ${methodLabel}${reference ? ' — ref ' + reference : ''}`,
     '',
-    `Deliver to: ${$('#shipName').value.trim()}`,
-    `${$('#shipAddress').value.trim()}, ${$('#shipRegion').value.trim()} ${$('#shipZip').value.trim()}, ${$('#shipCountry').value}`,
-    `Email: ${$('#shipEmail').value.trim()}`,
+    `Deliver to: ${s.name}`,
+    s.address,
+    `Email: ${s.email}`,
   ].join('\n');
 }
 
 /* Shared success path for every payment method. `extraRows` lets a
    method add its own receipt lines (e.g. the payment reference). */
-function finalizeOrder(methodLabel, total, extraRows = '', isCod = false, reference = '') {
+function finalizeOrder(methodLabel, total, extraRows = '', _reserved = false, reference = '', ship = null) {
   const orderId = 'SAAK-' + Date.now().toString(36).toUpperCase();
+  const s = shipDetails(ship);
 
   // Build the order message BEFORE the cart is cleared
-  lastOrderText = buildOrderText(orderId, methodLabel, total, reference);
+  lastOrderText = buildOrderText(orderId, methodLabel, total, reference, ship);
 
   // Optional order log — fire-and-forget so checkout never blocks on it.
   // text/plain avoids a CORS preflight, which Apps Script can't answer.
@@ -420,9 +439,9 @@ function finalizeOrder(methodLabel, total, extraRows = '', isCod = false, refere
             const p = findProduct(l.id);
             return { name: p.name, size: l.size, qty: l.qty, price: p.price };
           }),
-          name: $('#shipName').value.trim(),
-          address: `${$('#shipAddress').value.trim()}, ${$('#shipRegion').value.trim()} ${$('#shipZip').value.trim()}, ${$('#shipCountry').value}`,
-          email: $('#shipEmail').value.trim(),
+          name: s.name,
+          address: s.address,
+          email: s.email,
         }),
       }).catch(() => {});
     } catch (e) { /* logging must never break checkout */ }
@@ -530,12 +549,6 @@ function handleGcashReturn() {
 
   if (outcome === 'success' && pending) {
     cart = pending.cart || [];
-    // finalizeOrder reads the ship fields from the DOM; repopulate them.
-    if (pending.ship) {
-      const [addr, rest] = (pending.ship.address || '').split(', ');
-      $('#shipName').value = pending.ship.name || '';
-      $('#shipEmail').value = pending.ship.email || '';
-    }
     store.set('saak_pending_order', null);
     openCart();
     $('#checkoutModal').hidden = false;
@@ -543,7 +556,7 @@ function handleGcashReturn() {
     $('#overlay').hidden = false;
     document.body.classList.add('no-scroll');
     finalizeOrder('GCash (auto)', pending.total,
-      '<div class="sum-row"><span>Confirmed by</span><span>GCash / PayMongo</span></div>', false, '');
+      '<div class="sum-row"><span>Confirmed by</span><span>GCash / PayMongo</span></div>', false, '', pending.ship);
   } else if (outcome === 'failed') {
     store.set('saak_pending_order', null);
     toast('GCash payment was not completed. Please try again.', 'fa-circle-info');
@@ -666,16 +679,25 @@ function init() {
   $('#newsletterBtn').addEventListener('click', () => {
     const email = $('#newsletterEmail').value.trim();
     if (!validEmail(email)) { toast('Enter a valid email to subscribe', 'fa-circle-info'); return; }
+    // No backend to store subscribers — open a prefilled email to the store
+    // so the signup actually reaches someone instead of vanishing.
+    window.location.href = 'mailto:' + CONFIG.storeEmail +
+      '?subject=' + encodeURIComponent('Newsletter signup') +
+      '&body=' + encodeURIComponent('Please add me to the SAAK list: ' + email);
     $('#newsletterEmail').value = '';
-    toast("You're on the list — welcome to SAAK");
+    toast('Opening your email app to confirm signup');
   });
   $('#contactSend').addEventListener('click', () => {
     const name = $('#contactName').value.trim();
     const email = $('#contactEmail').value.trim();
     const msg = $('#contactMessage').value.trim();
     if (!name || !msg || !validEmail(email)) { toast('Please complete all fields with a valid email', 'fa-circle-info'); return; }
+    // Send through the visitor's email app to the store (no backend).
+    window.location.href = 'mailto:' + CONFIG.storeEmail +
+      '?subject=' + encodeURIComponent('Message from ' + name) +
+      '&body=' + encodeURIComponent(msg + '\n\nReply to: ' + email);
     $('#contactName').value = ''; $('#contactEmail').value = ''; $('#contactMessage').value = '';
-    toast('Message sent — we reply within one business day');
+    toast('Opening your email app to send');
   });
 }
 

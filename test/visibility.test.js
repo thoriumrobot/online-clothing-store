@@ -96,6 +96,24 @@ console.log('\n[C] Automatic GCash gateway (redirect flow)');
     check('manual reference hidden in auto mode', d.querySelector('#gcashRef').hidden === true);
     check('pending order stored for the return trip', !!window.localStorage.getItem('saak_pending_order'));
 
+    // Simulate coming back from GCash with ?payment=success in a FRESH page
+    // (the buyer's form fields are empty now — the address must come from
+    // the stored pending order, not the blank DOM).
+    const pendingRaw = window.localStorage.getItem('saak_pending_order');
+    const dom2 = new JSDOM(fs.readFileSync(path.join(root, 'standalone.html'), 'utf8'),
+      { runScripts: 'dangerously', url: 'https://thoriumrobot.github.io/online-clothing-store/?payment=success' });
+    const w2 = dom2.window, d2 = w2.document;
+    w2.localStorage.setItem('saak_pending_order', pendingRaw);
+    d2.dispatchEvent(new w2.Event('DOMContentLoaded', { bubbles: true }));
+
+    const successShown = d2.querySelector('#successStep').hidden === false;
+    check('auto-GCash return shows the success step', successShown);
+    const emailHref = decodeURIComponent(d2.querySelector('#orderEmailBtn').href);
+    check('order email keeps the delivery address after redirect', emailHref.includes('12 Mabini St') && emailHref.includes('Metro Manila'));
+    check('order email keeps the customer name after redirect', emailHref.includes('Ana Cruz'));
+    const clearedVal = w2.localStorage.getItem('saak_pending_order');
+    check('pending order cleared after completion', clearedVal === null || clearedVal === 'null');
+
     console.log(`\nRESULT: ${passed} passed, ${failed} failed`);
     process.exit(failed ? 1 : 0);
   });
