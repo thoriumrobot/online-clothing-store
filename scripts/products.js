@@ -12,7 +12,8 @@ const PRODUCTS = [
   { "id": "p2", "name": "Straight Trousers", "price": 2899.00, "category": "bottoms", "img": "images/trousers.svg" },
   { "id": "p3", "name": "Field Overshirt", "price": 3999.00, "category": "outerwear", "img": "images/overshirt.svg", "badge": "New" },
   { "id": "p4", "name": "Canvas Tote", "price": 999.00, "category": "accessories", "img": "images/tote.svg" },
-  { "id": "p5", "name": "District Hoodie", "price": 3199.00, "category": "tops", "img": "images/hoodie.svg" }
+  { "id": "p5", "name": "District Hoodie", "price": 3199.00, "category": "tops", "img": "images/hoodie.svg" },
+  { "id": "p6", "name": "NESSA Luxe Elegant Modest Dress | Muslimah Maxi Dress", "price": 378.00, "category": "tops", "img": "images/nessa-luxe-elegant-modest-dress-muslimah-mschgcz1.jpg", "badge": "✨ Elegant Crinkle Airflow Maxi Dress ✨  Damhin ang komportable at effortless na elegance ng aming premium Crinkle Airflow Maxi Dress. Gawa sa magaan at breathable na tela na presko at komportable sa balat, perfect para sa everyday wear, casual outings, travel, at mga espesyal na okasyon.  Features:  ✔ Premium Crinkle Airflow fabric✔ Magaan at breathable✔ Presko at komportableng isuot✔ Functional front loop buttons (maaaring buksan)✔ May removable waist belt✔ May belt loops sa magkabilang gilid para secure ang pagkakasya ng belt✔ Modest at flattering na maxi-length design  Size Details:  Size: S–L (Free Size)Recommended Height: 5'0\"–5'2\"  📌 Paalala: Maaaring magkaroon ng 1–2 cm na pagkakaiba sa sukat dahil sa manual measurement. Maaaring bahagyang mag-iba ang kulay ng item depende sa lighting at screen settings ng device.  📌 Mangyaring mag-checkout nang responsable. Umorder lamang kung handa kayong magbayad at tanggapin ang inyong order. Irespeto natin ang oras ng seller at ang effort para sa pag-process at pagpapadala ng orders. Maraming salamat! 🤍" }
 ];
 
 /* Works both in the browser and in Node (for the CLI and tests) */
